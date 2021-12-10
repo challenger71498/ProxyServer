@@ -1,5 +1,8 @@
-namespace ProxyServer.Protocol
+namespace MySql.ProxyServer.Protocol
 {
+    using System;
+
+    [Flags]
     public enum CapabilityFlag
     {
         CLIENT_LONG_PASSWORD = 0x00000001,

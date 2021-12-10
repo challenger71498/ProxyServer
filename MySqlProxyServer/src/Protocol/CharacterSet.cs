@@ -1,4 +1,4 @@
-namespace ProxyServer.Protocol
+namespace MySql.ProxyServer.Protocol
 {
     public enum CharacterSet
     {

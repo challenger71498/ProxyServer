@@ -1,6 +1,9 @@
-namespace ProxyServer.Protocol
+using System;
+
+namespace MySql.ProxyServer.Protocol
 {
-    public enum StatusFlags
+    [Flags]
+    public enum StatusFlag
     {
         SERVER_STATUS_IN_TRANS = 0x0001,
         SERVER_STATUS_AUTOCOMMIT = 0x0002,
