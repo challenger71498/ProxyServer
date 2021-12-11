@@ -1,4 +1,4 @@
-namespace MySql.ProxyServer.Tests
+namespace Min.MySqlProxyServer.Tests
 {
     using System;
     using System.IO;
@@ -35,7 +35,7 @@ namespace MySql.ProxyServer.Tests
             using (var stream = new MemoryStream(output))
             {
                 using var writer = new BinaryWriter(stream);
-                writer.WriteLengthEncodedInt(this.lengthEncodedInt, this.lengthEncodedIntBinary.Length - 1);
+                writer.WriteLengthEncodedInt(this.lengthEncodedInt);
             }
 
             var res = output.SequenceEqual(this.lengthEncodedIntBinary);

@@ -90,7 +90,6 @@ AppPackages/
 sql/
 *.Cache
 ClientBin/
-[Ss]tyle[Cc]op.*
 ![Ss]tyle[Cc]op.targets
 ~$*
 *~

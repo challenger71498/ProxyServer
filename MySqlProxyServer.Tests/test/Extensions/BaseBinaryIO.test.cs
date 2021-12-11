@@ -1,4 +1,4 @@
-namespace MySql.ProxyServer.Tests
+namespace Min.MySqlProxyServer.Tests
 {
     using System;
     using NUnit.Framework;

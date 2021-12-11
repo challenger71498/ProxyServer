@@ -1,6 +1,5 @@
 {
   "prettier.tabWidth": 4,
-  "omnisharp.useEditorFormattingSettings": false,
+  "editor.tabSize": 4,
   "editor.formatOnSave": true,
-  "editor.tabSize": 4
 }

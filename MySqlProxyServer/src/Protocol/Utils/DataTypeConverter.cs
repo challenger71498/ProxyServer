@@ -1,8 +1,10 @@
-namespace MySql.ProxyServer.Protocol
-{
-    using System;
-    using System.Text;
+// Copyright (c) Min. All rights reserved.
 
+using System;
+using System.Text;
+
+namespace Min.MySqlProxyServer.Protocol
+{
     public class DataTypeConverter
     {
         public static int ToInt(byte[] binary)
@@ -42,4 +44,3 @@ namespace MySql.ProxyServer.Protocol
         }
     }
 }
-

@@ -1,7 +1,7 @@
 namespace System.IO
 {
-    using System.Text;
     using System.Globalization;
+    using System.Text;
 
     public static class BinaryReaderExtension
     {
@@ -46,7 +46,6 @@ namespace System.IO
         {
             var stringBuilder = new StringBuilder();
 
-
             while (reader.BaseStream.Position < reader.BaseStream.Length)
             {
                 var binary = reader.ReadByte();
@@ -62,7 +61,13 @@ namespace System.IO
 
             throw new Exception("Unexpected EOF."); // TODO: Exception handling
         }
+
+        public static string ReadLengthEncodedString(this BinaryReader reader)
+        {
+            var length = reader.ReadLengthEncodedInt();
+            var str = reader.ReadFixedString(length);
+
+            return str;
+        }
     }
 }
-
-

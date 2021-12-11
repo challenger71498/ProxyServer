@@ -1,7 +1,7 @@
 namespace ProxyServer.Protocol
 {
     using System.IO;
-    using MySql.ProxyServer.Protocol;
+    using Min.MySqlProxyServer.Protocol;
 
     public class OKPacket
     {

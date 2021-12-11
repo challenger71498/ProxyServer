@@ -1,91 +1,73 @@
-﻿namespace MySql.ProxyServer
+﻿using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
+using Min.MySqlProxyServer.Protocol;
+using Min.MySqlProxyServer.Sockets;
+
+namespace Min.MySqlProxyServer
 {
-    using System;
-    using System.IO;
-    using System.Net;
-    using System.Net.Sockets;
-    using System.Text;
-    using System.Threading.Tasks;
-    using MySql.ProxyServer.Protocol;
-
-    class Program
+    public class Program
     {
-        public static void Main(string[] args)
+        /// <summary>
+        /// Main entrypoint of the program.
+        /// </summary>
+        /// <returns>A <see cref="Task"/> representing the result of the asynchronous operation.</returns>
+        public static async Task Main()
         {
-            var ipEndPoint = new IPEndPoint(IPAddress.Parse("172.17.0.2"), 3306);
+            var clientEndPoint = new IPEndPoint(IPAddress.Loopback, 8080);
+            var serverEndPoint = new IPEndPoint(IPAddress.Loopback, 3306);
 
-            using var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            Console.WriteLine("Starting...");
+            var clientSocketService = new ClientSocketService(clientEndPoint);
 
-            try
+            var packetService = new PacketService();
+            var payloadService = new PayloadService();
+
+            packetService.OnPayload += (object sender, byte[] payload) =>
             {
-                client.Connect(ipEndPoint);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"ERROR! {e.Message}");
-            }
+                var protocol = payloadService.GetProtocol(payload);
 
-            Console.WriteLine("START");
-            ;
-            new Task(async () =>
-            {
-                Console.WriteLine("Starting tasks...");
-
-                try
+                if (protocol != null && protocol.GetType() == typeof(Handshake))
                 {
-                    while (true)
-                    {
-                        var binary = new byte[1024];
+                    var handshake = protocol as Handshake;
 
-                        await client.ReceiveAsync(binary, SocketFlags.None);
-
-                        var adapter = new PacketAdapter(binary);
-
-                        if (adapter.PayloadLength == 0)
-                        {
-                            continue;
-                        }
-
-                        var payload = Convert.ToHexString(adapter.Payload);
-
-                        Console.WriteLine(adapter.PayloadLength);
-                        Console.WriteLine($"DATA RECEIVED: {payload}");
-
-                        var handshake = new HandshakeProtocol(adapter.Payload);
-
-                        Console.WriteLine($"AuthPluginData: {handshake.AuthPluginData}");
-                        Console.WriteLine($"AuthPluginName: {handshake.AuthPluginName}");
-                        Console.WriteLine($"Capability: {handshake.Capability}");
-                        Console.WriteLine($"CharacterSet: {handshake.CharacterSet}");
-                        Console.WriteLine($"ConnectionId: {handshake.ConnectionId}");
-                        Console.WriteLine($"ProtocolVersion: {handshake.ProtocolVersion}");
-                        Console.WriteLine($"ServerVersion: {handshake.ServerVersion}");
-                        Console.WriteLine($"StatusFlag: {handshake.StatusFlag}");
-                    }
-
+                    Console.WriteLine($"handshake.AuthPluginData: {handshake.AuthPluginData}");
+                    Console.WriteLine($"handshake.AuthPluginName: {handshake.AuthPluginName}");
+                    Console.WriteLine($"handshake.Capability: {handshake.Capability}");
+                    Console.WriteLine($"handshake.CharacterSet: {handshake.CharacterSet}");
+                    Console.WriteLine($"handshake.ConnectionId: {handshake.ConnectionId}");
+                    Console.WriteLine($"handshake.ProtocolVersion: {handshake.ProtocolVersion}");
+                    Console.WriteLine($"handshake.ServerVersion: {handshake.ServerVersion}");
+                    Console.WriteLine($"handshake.StatusFlag: {handshake.StatusFlag}");
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"ERROR! {e.Message}");
-                }
-            }).Start();
+            };
 
-            while (true)
+            clientSocketService.AcceptHandler += async (object sender, Socket socket) =>
             {
-                // 콘솔 입력 받는다.
-                var msg = Console.ReadLine();
-                // 클라이언트로 받은 메시지를 String으로 변환
-                var output = Convert.FromHexString("0100000001");
-                client.Send(output);
-                // 메시지 내용이 exit라면 무한 루프 종료(즉, 클라이언트 종료)
-                if ("EXIT".Equals(msg, StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine("Socket client has been connected!");
+                var client = new SocketConnection(socket);
+
+                var serverSocketService = new ServerSocketService(serverEndPoint);
+                var server = await serverSocketService.GetConnection();
+
+                server.OnReceiveData += async (object sender, byte[] data) =>
                 {
-                    break;
-                }
-            }
-            // 콘솔 출력 - 접속 종료 메시지
-            Console.WriteLine($"Disconnected");
+                    // Console.WriteLine($"From server to client: {data.Length}");
+
+                    // Analyze data.
+                    packetService.PushPacket(data);
+
+                    await client.Send(data);
+                };
+
+                client.OnReceiveData += async (object sender, byte[] data) =>
+                {
+                    // Console.WriteLine($"From client to server: {data.Length}");
+                    await server.Send(data);
+                };
+            };
+
+            await clientSocketService.StartListening();
         }
     }
 }

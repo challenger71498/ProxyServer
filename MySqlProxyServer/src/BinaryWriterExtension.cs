@@ -1,11 +1,8 @@
-
-
 namespace System.IO
 {
     using System;
-    using System.IO;
     using System.Text;
-    using MySql.ProxyServer.Protocol;
+    using Min.MySqlProxyServer.Protocol;
 
     public static class BinaryWriterExtension
     {
@@ -19,27 +16,29 @@ namespace System.IO
             }
         }
 
-        public static void WriteLengthEncodedInt(this BinaryWriter writer, int number, int numberLength)
+        public static void WriteLengthEncodedInt(this BinaryWriter writer, int number)
         {
             var binary = DataTypeConverter.FromInt(number);
 
-            if (numberLength == 1)
+            if (number < 251)
             {
                 writer.Write(binary[0]);
-                return;
             }
-
-            byte? flag = numberLength switch
+            else if (number < (1 << 16))
             {
-                2 => 0xfc,
-                3 => 0xfd,
-                8 => 0xfe,
-                _ => throw new ArgumentException("Length is invalid. Should be one of: 1, 2, 3, 8.")
-            };
-
-            writer.Write((byte)flag);
-
-            writer.Write(binary[..numberLength]);
+                writer.Write((byte)0xfc);
+                writer.Write(binary[..2]);
+            }
+            else if (number < (1 << 24))
+            {
+                writer.Write((byte)0xfd);
+                writer.Write(binary[..3]);
+            }
+            else
+            {
+                writer.Write((byte)0xfe);
+                writer.Write(binary[..8]);
+            }
         }
 
         public static void WriteFixedString(this BinaryWriter writer, string str, int length)
@@ -57,6 +56,11 @@ namespace System.IO
             writer.WriteFixedString(str, str.Length);
             writer.Write('\0');
         }
+
+        public static void WriteLengthEncodedString(this BinaryWriter writer, string str)
+        {
+            writer.WriteLengthEncodedInt(str.Length);
+            writer.WriteFixedString(str, str.Length);
+        }
     }
 }
-

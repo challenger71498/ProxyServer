@@ -1,6 +1,6 @@
 using System;
 
-namespace MySql.ProxyServer.Protocol
+namespace Min.MySqlProxyServer.Protocol
 {
     [Flags]
     public enum StatusFlag

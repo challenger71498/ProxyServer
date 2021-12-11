@@ -1,8 +1,8 @@
-namespace MySql.ProxyServer.Tests
+namespace Min.MySqlProxyServer.Tests
 {
     using System;
     using System.Text;
-    using MySql.ProxyServer.Protocol;
+    using Min.MySqlProxyServer.Protocol;
     using NUnit.Framework;
 
     [TestFixture]

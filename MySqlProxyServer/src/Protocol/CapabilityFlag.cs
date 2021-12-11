@@ -1,4 +1,4 @@
-namespace MySql.ProxyServer.Protocol
+namespace Min.MySqlProxyServer.Protocol
 {
     using System;
 

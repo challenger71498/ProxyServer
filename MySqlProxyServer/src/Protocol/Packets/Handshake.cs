@@ -1,31 +1,35 @@
-namespace MySql.ProxyServer.Protocol
-{
-    using System;
-    using System.IO;
+using System;
+using System.IO;
 
-    public class HandshakeProtocol
+namespace Min.MySqlProxyServer.Protocol
+{
+    public class Handshake : BaseProtocol
     {
         private AuthPluginDataAdapter authPluginDataAdapter;
         private CapabilityFlagAdapter capabilityFlagAdapter;
 
         public int ProtocolVersion { get; private set; }
+
         public string ServerVersion { get; private set; }
+
         public int ConnectionId { get; private set; }
+
         public string AuthPluginData => authPluginDataAdapter.Data;
+
         public string AuthPluginName { get; private set; }
+
         public CapabilityFlag? Capability => capabilityFlagAdapter.Data;
-        public CharacterSet? CharacterSet { get; private set; }
+
+        public int CharacterSet { get; private set; }
+
         public StatusFlag? StatusFlag { get; private set; }
 
-        public HandshakeProtocol(byte[] binary)
+        public Handshake(byte[] binary)
+            : base(binary)
         {
-            using var stream = new MemoryStream(binary);
-            using var reader = new BinaryReader(stream);
-
-            Read(reader);
         }
 
-        private async void Read(BinaryReader reader)
+        protected override void Read(BinaryReader reader)
         {
             string authPrimary;
             string authSecondary;
@@ -44,7 +48,7 @@ namespace MySql.ProxyServer.Protocol
             capabilityLower = reader.ReadFixedInt(2);
 
             var characterSetInt = reader.ReadFixedInt(1);
-            this.CharacterSet = (CharacterSet)characterSetInt;
+            this.CharacterSet = characterSetInt;
 
             var statusFlagInt = reader.ReadFixedInt(2);
             this.StatusFlag = (StatusFlag)statusFlagInt;

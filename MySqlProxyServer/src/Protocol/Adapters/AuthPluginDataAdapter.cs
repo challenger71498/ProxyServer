@@ -1,8 +1,7 @@
-namespace MySql.ProxyServer.Protocol
+namespace Min.MySqlProxyServer.Protocol
 {
     public class AuthPluginDataAdapter
     {
-
         // fields
         private readonly string primary;
         private readonly string secondary;
