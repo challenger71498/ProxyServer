@@ -1,18 +1,23 @@
 namespace Min.MySqlProxyServer.Protocol
 {
-    public class AuthPluginDataAdapter
+    public struct AuthPluginDataAdapter
     {
         // fields
-        private readonly string primary;
-        private readonly string secondary;
+        public string? primary;
+        public string? secondary;
 
         // properties
-        public string Data => this.primary + this.secondary;
-
-        public AuthPluginDataAdapter(string primary, string secondary)
+        public string? Value
         {
-            this.primary = primary;
-            this.secondary = secondary;
+            get
+            {
+                if (this.primary == null || this.secondary == null)
+                {
+                    return null;
+                }
+
+                return this.primary + this.secondary;
+            }
         }
     }
 }

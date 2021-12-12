@@ -29,16 +29,6 @@ namespace Min.MySqlProxyServer
 
                 if (protocol != null && protocol.GetType() == typeof(Handshake))
                 {
-                    var handshake = protocol as Handshake;
-
-                    Console.WriteLine($"handshake.AuthPluginData: {handshake.AuthPluginData}");
-                    Console.WriteLine($"handshake.AuthPluginName: {handshake.AuthPluginName}");
-                    Console.WriteLine($"handshake.Capability: {handshake.Capability}");
-                    Console.WriteLine($"handshake.CharacterSet: {handshake.CharacterSet}");
-                    Console.WriteLine($"handshake.ConnectionId: {handshake.ConnectionId}");
-                    Console.WriteLine($"handshake.ProtocolVersion: {handshake.ProtocolVersion}");
-                    Console.WriteLine($"handshake.ServerVersion: {handshake.ServerVersion}");
-                    Console.WriteLine($"handshake.StatusFlag: {handshake.StatusFlag}");
                 }
             };
 

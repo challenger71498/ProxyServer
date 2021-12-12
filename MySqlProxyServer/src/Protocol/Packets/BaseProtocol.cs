@@ -6,14 +6,10 @@ namespace Min.MySqlProxyServer.Protocol
 {
     public abstract class BaseProtocol
     {
-        public BaseProtocol(byte[] bytes)
+        protected BaseProtocol()
         {
-            var stream = new MemoryStream(bytes);
-            var reader = new BinaryReader(stream);
-
-            this.Read(reader);
         }
 
-        protected abstract void Read(BinaryReader reader);
+        protected abstract bool TryRead(byte[] data);
     }
 }

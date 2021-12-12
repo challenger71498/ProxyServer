@@ -69,5 +69,20 @@ namespace System.IO
 
             return str;
         }
+
+        public static string ReadRestOfPacketString(this BinaryReader reader)
+        {
+            var stringBuilder = new StringBuilder();
+
+            while (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                var binary = reader.ReadByte();
+                var letter = (char)binary;
+
+                stringBuilder.Append(letter);
+            }
+
+            return stringBuilder.ToString();
+        }
     }
 }

@@ -1,10 +1,11 @@
+// Copyright (c) Min. All rights reserved.
+
+using System;
+using System.Net.Sockets;
+using System.Threading.Tasks;
+
 namespace Min.MySqlProxyServer.Sockets
 {
-    using System;
-    using System.Net;
-    using System.Net.Sockets;
-    using System.Threading.Tasks;
-
     public class SocketConnection
     {
         public Socket socket;
@@ -23,7 +24,7 @@ namespace Min.MySqlProxyServer.Sockets
             await this.socket.SendAsync(binary, SocketFlags.None);
         }
 
-        private async Task StartListening()
+        private void StartListening()
         {
             var listenTask = new Task(async () =>
             {
@@ -31,7 +32,7 @@ namespace Min.MySqlProxyServer.Sockets
                 {
                     while (true)
                     {
-                        var buffer = new byte[1024 * 1024 * 16];
+                        var buffer = new byte[(1024 * 1024 * 16) + 4];
                         var length = await this.socket.ReceiveAsync(buffer, SocketFlags.None);
 
                         if (length == 0)

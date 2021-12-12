@@ -2,24 +2,18 @@ using System;
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public class CapabilityFlagAdapter
+    public struct CapabilityFlagAdapter
     {
-        private readonly int lower;
-        private readonly int upper;
+        public int lower;
+        public int upper;
 
-        public CapabilityFlag Data
+        public CapabilityFlag Value
         {
             get
             {
                 var result = (this.upper << 8) + this.lower;
                 return (CapabilityFlag)result;
             }
-        }
-
-        public CapabilityFlagAdapter(int lower, int upper)
-        {
-            this.lower = lower;
-            this.upper = upper;
         }
     }
 }
