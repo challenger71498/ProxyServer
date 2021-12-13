@@ -1,5 +1,6 @@
 // Copyright (c) Min. All rights reserved.
 
+using System;
 using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
@@ -14,30 +15,22 @@ namespace Min.MySqlProxyServer.Protocol
             using var stream = new MemoryStream(binary);
             using var reader = new BinaryReader(stream);
 
-            this.Read(reader);
-        }
-
-        /// <inheritdoc/>
-        public int PayloadLength { get; private set; }
-
-        /// <inheritdoc/>
-        public int SequenceId { get; private set; }
-
-        /// <inheritdoc/>
-        public byte[] Payload { get; private set; }
-
-        public void Read(BinaryReader reader)
-        {
             this.PayloadLength = reader.ReadFixedInt(3);
             this.SequenceId = reader.ReadFixedInt(1);
 
             if (this.PayloadLength == 0)
             {
+                this.Payload = Array.Empty<byte>();
                 return;
             }
 
-            this.Payload = new byte[this.PayloadLength];
-            reader.Read(this.Payload);
+            this.Payload = reader.ReadBytes(this.PayloadLength);
         }
+
+        public int PayloadLength { get; private set; }
+
+        public int SequenceId { get; private set; }
+
+        public byte[] Payload { get; private set; }
     }
 }

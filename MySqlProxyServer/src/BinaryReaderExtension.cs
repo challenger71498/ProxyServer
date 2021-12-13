@@ -29,6 +29,11 @@ namespace System.IO
                 _ => 1
             };
 
+            if (length == 1)
+            {
+                return flag;
+            }
+
             var number = ReadFixedInt(reader, length);
 
             return number;

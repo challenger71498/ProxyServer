@@ -24,7 +24,7 @@ namespace Min.MySqlProxyServer.Sockets
         /// <summary>
         /// Event handler for socket accept.
         /// </summary>
-        public event EventHandler<Socket> AcceptHandler;
+        public event EventHandler<SocketConnection> ConnectedEventHandler;
 
         /// <summary>
         /// Gets ip end point.
@@ -46,15 +46,16 @@ namespace Min.MySqlProxyServer.Sockets
 
                 while (true)
                 {
-                    Console.WriteLine("Waiting for a connection...");
-
                     var accepted = await listener.AcceptAsync();
-                    this.AcceptHandler?.Invoke(this, accepted);
+                    var socketConnection = new SocketConnection(accepted);
+
+                    this.ConnectedEventHandler?.Invoke(this, socketConnection);
                 }
             }
             catch (Exception e)
             {
                 Console.WriteLine($"ERROR! {e.Message}");
+                Console.WriteLine(e.StackTrace);
             }
         }
     }

@@ -4,6 +4,6 @@ namespace Min.MySqlProxyServer.Protocol
 {
     public interface IProtocol
     {
-        byte[] ToBinary();
+
     }
 }

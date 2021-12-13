@@ -1,39 +1,37 @@
+// Copyright (c) Min. All rights reserved.
+
+using System;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading.Tasks;
+
 namespace Min.MySqlProxyServer.Sockets
 {
-    using System;
-    using System.Net;
-    using System.Net.Sockets;
-    using System.Threading.Tasks;
-
     public class ServerSocketService
     {
-        private readonly Socket socket;
-        private SocketConnection connection;
-
         public IPEndPoint EndPoint { get; private set; }
 
         public ServerSocketService(IPEndPoint serverEndPoint)
         {
             this.EndPoint = serverEndPoint;
-
-            this.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         }
 
         public async Task<SocketConnection> GetConnection()
         {
+            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
             try
             {
-                await this.socket.ConnectAsync(this.EndPoint);
+                await socket.ConnectAsync(this.EndPoint);
+                var connection = new SocketConnection(socket);
+                return connection;
             }
             catch (Exception e)
             {
                 Console.WriteLine($"Error when start connecting... {e.GetType()} {e.Message}");
                 Console.WriteLine($"STACKTRACE: {e.StackTrace}");
+                throw;
             }
-
-            this.connection = new SocketConnection(this.socket);
-
-            return this.connection;
         }
     }
 }

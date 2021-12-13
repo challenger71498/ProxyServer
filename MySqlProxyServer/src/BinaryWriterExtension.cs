@@ -1,19 +1,21 @@
+// Copyright (c) Min. All rights reserved.
+
+using System.Text;
+using Min.MySqlProxyServer.Protocol;
+
 namespace System.IO
 {
-    using System;
-    using System.Text;
-    using Min.MySqlProxyServer.Protocol;
-
     public static class BinaryWriterExtension
     {
         public static void WriteFixedInt(this BinaryWriter writer, int number, int length)
         {
-            var binary = DataTypeConverter.FromInt(number);
+            var intBinary = DataTypeConverter.FromInt(number);
+            var binary = new byte[length];
 
-            for (var i = 0; i < length; ++i)
-            {
-                writer.Write(binary[i]);
-            }
+            var copyLength = Math.Min(intBinary.Length, length);
+            intBinary[..copyLength].CopyTo(binary, 0);
+
+            writer.Write(binary);
         }
 
         public static void WriteLengthEncodedInt(this BinaryWriter writer, int number)
@@ -43,12 +45,14 @@ namespace System.IO
 
         public static void WriteFixedString(this BinaryWriter writer, string str, int length)
         {
-            var binary = DataTypeConverter.FromString(str, Encoding.ASCII);
+            var strBinary = DataTypeConverter.FromString(str, Encoding.ASCII);
 
-            for (var i = 0; i < length; ++i)
-            {
-                writer.Write(binary[i]);
-            }
+            var binary = new byte[length];
+
+            var copyLength = Math.Min(strBinary.Length, length);
+            strBinary[..copyLength].CopyTo(binary, 0);
+
+            writer.Write(binary);
         }
 
         public static void WriteNulTerminatedString(this BinaryWriter writer, string str)

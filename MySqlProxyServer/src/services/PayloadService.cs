@@ -1,41 +1,78 @@
+// Copyright (c) Min. All rights reserved.
+
 using System;
+using System.Threading.Tasks;
 using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer
 {
     public class PayloadService
     {
-        public PayloadService()
-        {
+        private readonly IProtocolFactory[] protocolFactories;
+        private readonly IProtocolProcessor[] protocolProcessors;
 
+        public PayloadService(IProtocolFactory[] protocolFactories, IProtocolProcessor[] protocolProcessors)
+        {
+            this.protocolFactories = protocolFactories;
+            this.protocolProcessors = protocolProcessors;
         }
 
-        public BaseProtocol GetProtocol(byte[] payload)
+        public async Task<PayloadInfo?> TryProcess(byte[] payload)
         {
-            var header = payload[0];
+            var protocol = await this.GetProtocol(payload);
 
-            switch (header)
+            if (protocol == null)
             {
-                case 0x0a: // Handshake
-                    return new Handshake(payload);
-                default:
-                    return null;
+                return null;
             }
 
-            // switch (header)
-            // {
-            //     case 0x0a: // Handshake
-            //         return;
-            //     case 0x00: // OK_Packet
-            //     case 0xfe:
-            //         return;
-            //     case 0xff: // ERR_Packet
-            //         return;
-            //     default:
-            //         throw new Exception("Unsupported payload.");
-            // }
+            var processed = await this.Process(protocol);
 
-            var handshake = new Handshake(payload);
+            return processed;
+        }
+
+        private async Task<IProtocol?> GetProtocol(byte[] data)
+        {
+            // Console.WriteLine("Trying to get protocol...");
+
+            // NOTE: Multiprocessing?
+            var protocolTask = new Task<IProtocol?>(() =>
+            {
+                foreach (var factory in this.protocolFactories)
+                {
+                    if (factory.TryCreate(data, out var protocol))
+                    {
+                        return protocol;
+                    }
+                }
+
+                return null;
+            });
+
+            protocolTask.Start();
+
+            return await protocolTask;
+        }
+
+        private async Task<PayloadInfo?> Process(IProtocol protocol)
+        {
+            // NOTE: Multiprocessing?
+            var processTask = new Task<PayloadInfo?>(() =>
+            {
+                foreach (var processor in this.protocolProcessors)
+                {
+                    if (processor.TryProcess(protocol, out var info))
+                    {
+                        return info;
+                    }
+                }
+
+                return null;
+            });
+
+            processTask.Start();
+
+            return await processTask;
         }
     }
 }

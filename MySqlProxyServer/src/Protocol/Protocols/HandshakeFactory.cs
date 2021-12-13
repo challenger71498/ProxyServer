@@ -5,26 +5,9 @@ using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public class HandShakeFactory : IProtocolFactory
+    public class HandShakeFactory : BaseProtocolFactory
     {
-        public bool TryCreate(byte[] data, out IProtocol handshake)
-        {
-            var stream = new MemoryStream(data);
-            var reader = new BinaryReader(stream);
-
-            try
-            {
-                handshake = Read(reader);
-                return true;
-            }
-            catch
-            {
-                handshake = default;
-                return false;
-            }
-        }
-
-        private static Handshake Read(BinaryReader reader)
+        protected override IProtocol Read(BinaryReader reader)
         {
             /* TODO: Refactor method. */
 
@@ -63,11 +46,6 @@ namespace Min.MySqlProxyServer.Protocol
             if (handshake.Capability.HasFlag(CapabilityFlag.CLIENT_PLUGIN_AUTH))
             {
                 handshake.AuthPluginName = reader.ReadNulTerminatedString();
-            }
-
-            if (reader.BaseStream.Position != reader.BaseStream.Length - 1)
-            {
-                throw new Exception("Reader did not reach EOF.");
             }
 
             handshake.Capability = capabilityFlagAdapter.Value;

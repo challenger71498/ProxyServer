@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace Min.MySqlProxyServer.Protocol
 {
     public struct QueryCommand : IProtocol
