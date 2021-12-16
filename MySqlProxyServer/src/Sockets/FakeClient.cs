@@ -22,7 +22,7 @@ namespace Min.MySqlProxyServer.Sockets
 
             var observer = Observer.Create<byte[]>(this.OnDataReceived);
 
-            this.connection.DataObservable.Subscribe(observer);
+            this.connection.WhenDataReceived.Subscribe(observer);
         }
 
         private void OnDataReceived(byte[] received)

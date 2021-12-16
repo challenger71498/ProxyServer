@@ -3,6 +3,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reactive;
+using System.Reactive.Linq;
 using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer
@@ -21,12 +23,14 @@ namespace Min.MySqlProxyServer
         public PacketService()
         {
             this.payloadQueue = new Queue<byte[]>();
+
+            this.WhenPayloadFlushed = Observable.Empty<PayloadFlushedArgs>();
         }
 
         /// <summary>
         /// Event handler on payload arrive.
         /// </summary>
-        public event EventHandler<PayloadFlushedEventArgs>? PayloadFlushedEventHandler;
+        public IObservable<PayloadFlushedArgs> WhenPayloadFlushed { get; private set; }
 
         public byte[][] GetPackets(int sequenceId, byte[] payload)
         {
@@ -65,6 +69,7 @@ namespace Min.MySqlProxyServer
                 this.initialSequenceId = packet.SequenceId;
             }
 
+            // TODO: Refactor with IObservable.Buffer().
             this.payloadQueue.Enqueue(packet.Payload);
 
             if (packet.PayloadLength == 0xffffff)
@@ -73,10 +78,9 @@ namespace Min.MySqlProxyServer
             }
 
             var payload = this.FlushQueue();
+            var payloadFlushedArgs = new PayloadFlushedArgs(this.initialSequenceId, payload);
 
-            var payloadFlushedEventArgs = new PayloadFlushedEventArgs(this.initialSequenceId, payload);
-
-            this.PayloadFlushedEventHandler?.Invoke(this, payloadFlushedEventArgs);
+            this.WhenPayloadFlushed.Append(payloadFlushedArgs);
         }
 
         private static byte[] ToBinary(IPacket packet)
@@ -110,9 +114,9 @@ namespace Min.MySqlProxyServer
         }
     }
 
-    public class PayloadFlushedEventArgs : EventArgs
+    public class PayloadFlushedArgs
     {
-        public PayloadFlushedEventArgs(int initialSequenceId, byte[] payload)
+        public PayloadFlushedArgs(int initialSequenceId, byte[] payload)
         {
             this.InitialSequenceId = initialSequenceId;
             this.Payload = payload;

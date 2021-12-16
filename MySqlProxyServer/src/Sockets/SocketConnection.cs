@@ -2,18 +2,26 @@
 
 using System;
 using System.Net.Sockets;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public class SocketConnection
+    /// <summary>
+    /// A <see cref="SocketConnection" /> class handles socket connection, providing interfaces to interface with.
+    /// </summary>
+    public class SocketConnection : ISocketConnection
     {
         private const int SocketKeepAliveTime = 2;
         private const int SocketKeepAliveInterval = 1;
         private const int SocketKeepAliveRetryCount = 1;
 
-        private Socket socket; // TODO: Change to private
+        private readonly Socket socket;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SocketConnection"/> class.
+        /// </summary>
+        /// <param name="socket">A socket.</param>
         public SocketConnection(Socket socket)
         {
             this.socket = socket;
@@ -21,23 +29,25 @@ namespace Min.MySqlProxyServer.Sockets
             this.Connected = true;
 
             this.SetKeepAliveOptions(SocketKeepAliveTime, SocketKeepAliveInterval, SocketKeepAliveRetryCount);
-            this.SetDisconnectedEvent();
 
-            this.StartListening();
+            this.WhenDisconnected = this.GetDisconnectedStream();
+            this.WhenDataReceived = this.GetDataStream();
         }
 
-        public IObservable<byte[]> DataStream { get; }
-
-        public event EventHandler<EventArgs>? DisconnectedEventHandler;
-
-        public event EventHandler<byte[]>? DataReceivedEventHandler;
-
+        /// <inheritdoc [cref="ISocketConnection"] />
         public bool Connected { get; private set; }
 
+        /// <inheritdoc [cref="ISocketConnection"] />
+        public IObservable<bool> WhenDisconnected { get; private set; }
+
+        /// <inheritdoc [cref="ISocketConnection"] />
+        public IObservable<byte[]> WhenDataReceived { get; private set; }
+
+        /// <inheritdoc [cref="ISocketConnection"] />
         public async Task Send(byte[] binary)
         {
-            Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
-            Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
+            // Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
+            // Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
 
             if (!this.Connected)
             {
@@ -48,6 +58,9 @@ namespace Min.MySqlProxyServer.Sockets
             await this.socket.SendAsync(binary, SocketFlags.None);
         }
 
+        /// <summary>
+        /// Disconnect the socket.
+        /// </summary>
         public void Disconnect()
         {
             if (!this.Connected)
@@ -59,8 +72,6 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.socket.Shutdown(SocketShutdown.Receive);
             this.socket.Close();
-
-            this.DisconnectedEventHandler?.Invoke(this, EventArgs.Empty);
         }
 
         private void SetKeepAliveOptions(int time, int interval, int retryCount)
@@ -71,59 +82,41 @@ namespace Min.MySqlProxyServer.Sockets
             this.socket.SetSocketOption(SocketOptionLevel.Tcp, SocketOptionName.TcpKeepAliveRetryCount, retryCount);
         }
 
-        private async void SetDisconnectedEvent()
+        private IObservable<bool> GetDisconnectedStream()
         {
-            try
-            {
-                while (true)
+            var disconnectedStream = Observable.Interval(TimeSpan.FromMilliseconds(1000))
+                .Select((_) =>
                 {
-                    if ((this.socket.Poll(1000, SelectMode.SelectRead) && this.socket.Available == 0) || !this.socket.Connected)
-                    {
-                        throw new Exception("Socket is not connected.");
-                    }
+                    var polled = this.socket.Poll(1000, SelectMode.SelectRead);
+                    var available = this.socket.Available == 0;
+                    var connected = this.socket.Connected;
 
-                    await Task.Delay(1000);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Disconnected! {e.GetType()} {e.Message}");
+                    return (polled && available) || !connected;
+                })
+                .Where(disconnected => disconnected == true);
 
-                if (this.Connected)
-                {
-                    this.Disconnect();
-                }
-            }
+            return disconnectedStream;
         }
 
-        private void StartListening()
+        private IObservable<byte[]> GetDataStream()
         {
-            var listenTask = new Task(async () =>
-            {
-                try
-                {
-                    var buffer = new byte[(1024 * 1024 * 16) + 4];
+            var buffer = new byte[(1024 * 1024 * 16) + 4];
 
-                    while (this.Connected)
-                    {
-                        var length = await this.socket.ReceiveAsync(buffer, SocketFlags.None);
+            var dataStream = Observable
+                .FromAsync(() => this.socket.ReceiveAsync(buffer, SocketFlags.None))
+                .Where((received) => received != 0)
+                .Select((_) => buffer);
 
-                        if (length == 0)
-                        {
-                            continue;
-                        }
+            dataStream.Catch<byte[], Exception>(this.OnDataStreamError);
 
-                        this.DataReceivedEventHandler?.Invoke(this, buffer[..length]);
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine($"Error on receiving... {e.GetType()} {e.Message}");
-                    Console.WriteLine($"STACKTRACE: {e.StackTrace}");
-                }
-            });
+            return dataStream;
+        }
 
-            listenTask.Start();
+        private IObservable<byte[]> OnDataStreamError(Exception e)
+        {
+            // TODO: Error handling
+
+            return Observable.Empty<byte[]>();
         }
     }
 }

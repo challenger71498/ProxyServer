@@ -32,6 +32,8 @@ namespace Min.MySqlProxyServer.Sockets
                 Console.WriteLine($"STACKTRACE: {e.StackTrace}");
                 throw;
             }
+
+            var foo = System.Reactive.Linq.Observable.Empty();
         }
     }
 }

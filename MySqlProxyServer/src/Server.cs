@@ -4,30 +4,33 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using Min.MySqlProxyServer.Sockets;
+using Unity;
 
 namespace Min.MySqlProxyServer
 {
     public class Server
     {
+        [Dependency]
         private readonly ClientSocketService clientSocketService;
-        private readonly ServerSocketService serverSocketService;
 
-        public Server(IPEndPoint clientEndPoint, IPEndPoint serverEndPoint)
-        {
-            this.clientSocketService = new ClientSocketService(clientEndPoint);
-            this.serverSocketService = new ServerSocketService(serverEndPoint);
-        }
+        [Dependency]
+        private readonly ServerSocketService serverSocketService;
 
         public async Task Start()
         {
-            this.clientSocketService.ConnectedEventHandler += this.OnClientSocketConnected;
+            var whenClientConnected = this.clientSocketService.StartListening();
+
+            if (whenClientConnected == null)
+            {
+                throw new Exception("Client socket observable is null.");
+            }
+
+            whenClientConnected.Subscribe(this.OnClientConnected);
 
             Console.WriteLine($"Server has been succesfully started on port {this.clientSocketService.EndPoint.Port}");
-
-            await this.clientSocketService.StartListening();
         }
 
-        private async void OnClientSocketConnected(object? sender, SocketConnection client)
+        private async void OnClientConnected(ISocketConnection client)
         {
             var server = await this.serverSocketService.GetConnection();
 

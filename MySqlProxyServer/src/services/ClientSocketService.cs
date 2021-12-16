@@ -8,7 +8,7 @@ using System.Reactive.Linq;
 namespace Min.MySqlProxyServer.Sockets
 {
     /// <summary>
-    /// ClientSocketService opens socket connection on the end point.
+    /// ClientSocketService opens a socket connection at the assigned port.
     /// </summary>
     public class ClientSocketService
     {
@@ -41,7 +41,7 @@ namespace Min.MySqlProxyServer.Sockets
         /// Start listening socket connection on the end point.
         /// </summary>
         /// <returns>IObservable that issues an event when a new socket has been connected.</returns>
-        public IObservable<SocketConnection>? StartListening()
+        public IObservable<ISocketConnection>? StartListening()
         {
             this.listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -52,18 +52,19 @@ namespace Min.MySqlProxyServer.Sockets
                 .FromAsync(this.listener.AcceptAsync)
                 .Select(socket => new SocketConnection(socket));
 
-            observable.Subscribe(
-                (_) =>
-                {
-                    Console.WriteLine("A new client has been connected.");
-                },
-                (_) =>
-                {
-                    Console.SetError("asdf");
-                    this.listener.Dispose();
-                });
+            observable.Catch<ISocketConnection, Exception>(this.OnError);
 
             return observable;
+        }
+
+        private IObservable<ISocketConnection> OnError(Exception e)
+        {
+            Console.Error.WriteLine($"Error occured while streaming socket connection observable: {e.GetType()} {e.Message}");
+            Console.Error.WriteLine(e.StackTrace);
+
+            this.listener?.Dispose();
+
+            return Observable.Empty<ISocketConnection>(); // NOTE: Needed?
         }
     }
 }

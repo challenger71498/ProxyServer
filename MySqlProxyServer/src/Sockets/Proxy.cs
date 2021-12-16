@@ -9,8 +9,8 @@ namespace Min.MySqlProxyServer.Sockets
 {
     public class Proxy
     {
-        private readonly SocketHandler client;
-        private readonly SocketHandler server;
+        private readonly SocketController client;
+        private readonly SocketController server;
 
         private readonly PacketService clientPacketService;
         private readonly PacketService serverPacketService;
@@ -32,8 +32,8 @@ namespace Min.MySqlProxyServer.Sockets
                 new HandshakeResponseProcessor(),
             };
 
-            this.client = new SocketHandler(clientConnection, this.clientPacketService, new PayloadService(clientProtocolFactories, clientProtocolProcessors));
-            this.server = new SocketHandler(serverConnection, this.serverPacketService);
+            this.client = new SocketController(clientConnection, this.clientPacketService, new PayloadService(clientProtocolFactories, clientProtocolProcessors));
+            this.server = new SocketController(serverConnection, this.serverPacketService);
 
             this.client.PacketsReadyEventHandler += this.OnClientPacketsReady;
             this.server.PacketsReadyEventHandler += this.OnServerPacketsReady;
