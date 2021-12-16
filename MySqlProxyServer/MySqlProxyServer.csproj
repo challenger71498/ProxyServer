@@ -15,6 +15,10 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+
+    <PackageReference Include="System.Reactive" Version="5.0.0" />
+
+    <PackageReference Include="Unity.Container" Version="5.11.11" />
   </ItemGroup>
 
 </Project>

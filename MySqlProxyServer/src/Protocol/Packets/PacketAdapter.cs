@@ -6,7 +6,7 @@ using System.IO;
 namespace Min.MySqlProxyServer.Protocol
 {
     /// <summary>
-    /// PacketAdapter adapts binary data to a payload.
+    /// <see cref="PacketAdapter"/> adapts binary data to a payload.
     /// </summary>
     public class PacketAdapter : IPacket
     {

@@ -26,6 +26,8 @@ namespace Min.MySqlProxyServer.Sockets
             this.StartListening();
         }
 
+        public IObservable<byte[]> DataStream { get; }
+
         public event EventHandler<EventArgs>? DisconnectedEventHandler;
 
         public event EventHandler<byte[]>? DataReceivedEventHandler;

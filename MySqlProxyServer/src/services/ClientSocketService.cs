@@ -3,7 +3,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
+using System.Reactive.Linq;
 
 namespace Min.MySqlProxyServer.Sockets
 {
@@ -12,6 +12,8 @@ namespace Min.MySqlProxyServer.Sockets
     /// </summary>
     public class ClientSocketService
     {
+        private Socket? listener;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocketService"/> class.
         /// </summary>
@@ -22,41 +24,46 @@ namespace Min.MySqlProxyServer.Sockets
         }
 
         /// <summary>
-        /// Event handler for socket accept.
+        /// Finalizes an instance of the <see cref="ClientSocketService"/> class.
+        /// Also disposes listener.
         /// </summary>
-        public event EventHandler<SocketConnection> ConnectedEventHandler;
+        ~ClientSocketService()
+        {
+            this.listener?.Dispose();
+        }
 
         /// <summary>
-        /// Gets ip end point.
+        /// Gets the IP end point.
         /// </summary>
         public IPEndPoint EndPoint { get; private set; }
 
         /// <summary>
         /// Start listening socket connection on the end point.
         /// </summary>
-        /// <returns>A Task which ends on error.</returns>
-        public async Task StartListening()
+        /// <returns>IObservable that issues an event when a new socket has been connected.</returns>
+        public IObservable<SocketConnection>? StartListening()
         {
-            var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            this.listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            try
-            {
-                listener.Bind(this.EndPoint);
-                listener.Listen();
+            this.listener.Bind(this.EndPoint);
+            this.listener.Listen();
 
-                while (true)
+            var observable = Observable
+                .FromAsync(this.listener.AcceptAsync)
+                .Select(socket => new SocketConnection(socket));
+
+            observable.Subscribe(
+                (_) =>
                 {
-                    var accepted = await listener.AcceptAsync();
-                    var socketConnection = new SocketConnection(accepted);
+                    Console.WriteLine("A new client has been connected.");
+                },
+                (_) =>
+                {
+                    Console.SetError("asdf");
+                    this.listener.Dispose();
+                });
 
-                    this.ConnectedEventHandler?.Invoke(this, socketConnection);
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"ERROR! {e.Message}");
-                Console.WriteLine(e.StackTrace);
-            }
+            return observable;
         }
     }
 }

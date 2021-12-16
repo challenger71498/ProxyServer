@@ -3,7 +3,7 @@
 namespace Min.MySqlProxyServer.Protocol
 {
     /// <summary>
-    /// MySQL packet interface.
+    /// <see cref="IPacket"/> is an interface for MySQL base packet.
     /// </summary>
     public interface IPacket
     {
