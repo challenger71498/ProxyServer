@@ -8,11 +8,13 @@ using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
+    // TODO: Move away dummy IPayloadService interface.
     public interface IPayloadService
     {
         IProtocol? TryGetProtocol(byte[] payload);
     }
 
+    // TODO: Move away dummy IPacketService interface.
     public interface IPacketService
     {
         IObservable<ISocketControllerMessage> Pipe(IObservable<byte[]> yay);
@@ -39,11 +41,15 @@ namespace Min.MySqlProxyServer.Sockets
 
         public IObservable<ISocketControllerMessage> WhenMessageCreated { get; private set; }
 
+        // NOTE: Create MessageHandler?
         private IObservable<ISocketControllerMessage> GetMessageStream(IObservable<byte[]> dataStream)
         {
             byte[]? captured = null;
 
-            var messageStream = dataStream.Do(data => captured = data)
+            // NOTE: To catch exception from every pipe, observables should be connected by operator.
+            // NOTE: Cannot seperate observables by variables. (ex: fooStream, barStream, bazStream, ...)
+            var messageStream = dataStream
+                .Do(data => captured = data)
                 .Select(this.RawDataPipe)
                 .Select(this.PacketPipe)
                 .Select(this.PayloadPipe)
@@ -82,19 +88,22 @@ namespace Min.MySqlProxyServer.Sockets
 
         byte[] PacketPipe(IPacket packet)
         {
-            // Do something..
+            // Get payload from packet.
+            // Throw SocketControllerException if failed.
             return null;
         }
 
         IProtocol PayloadPipe(byte[] payload)
         {
-            // Do something..
+            // Get protocol from packet.
+            // Throw SocketControllerException if failed.
             return null;
         }
 
         ISocketControllerMessage ProtocolPipe(IProtocol protocolStream)
         {
-            // Do something...
+            // Create message from the protocol.
+            // Throw SocketControllerException if failed.
             return null;
         }
 
@@ -129,6 +138,7 @@ namespace Min.MySqlProxyServer.Sockets
             }
         }
 
+        // NOTE: Is it okay to use internal exception?
         private class SocketControllerException : Exception
         {
             public SocketControllerException()
