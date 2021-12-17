@@ -10,10 +10,8 @@ namespace Min.MySqlProxyServer
 {
     public class Server
     {
-        [Dependency]
         private readonly ClientSocketService clientSocketService;
 
-        [Dependency]
         private readonly ServerSocketService serverSocketService;
 
         public async Task Start()

@@ -1,6 +1,7 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
+using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
@@ -15,7 +16,7 @@ namespace Min.MySqlProxyServer.Sockets
         /// Gets the type of the socket controller message.
         /// </summary>
         /// <value>An enum value.</value>
-        ISocketControllerMessageType Type { get; }
+        SocketControllerMessageType Type { get; }
     }
 
     public class RawDataMessage : ISocketControllerMessage
@@ -30,7 +31,7 @@ namespace Min.MySqlProxyServer.Sockets
         }
 
         /// <inheritdoc />
-        public ISocketControllerMessageType Type { get; } = ISocketControllerMessageType.RAW;
+        public SocketControllerMessageType Type { get; } = SocketControllerMessageType.RAW;
 
         /// <summary>
         /// Gets or sets a raw binary.
@@ -39,19 +40,19 @@ namespace Min.MySqlProxyServer.Sockets
         public byte[] Raw { get; set; }
     }
 
-    public class HandshakeControllerMessage : ISocketControllerMessage
+    public class HandshakeMessage : ISocketControllerMessage
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="HandshakeControllerMessage"/> class.
+        /// Initializes a new instance of the <see cref="HandshakeMessage"/> class.
         /// </summary>
         /// <param name="packets">Array of packets.</param>
-        public HandshakeControllerMessage(byte[][] packets)
+        public HandshakeMessage(byte[][] packets)
         {
             this.Packets = packets;
         }
 
         /// <inheritdoc/>
-        public ISocketControllerMessageType Type { get; } = ISocketControllerMessageType.HANDSHAKE;
+        public SocketControllerMessageType Type { get; } = SocketControllerMessageType.HANDSHAKE;
 
         /// <summary>
         /// Gets or sets a list of packet.
@@ -60,7 +61,28 @@ namespace Min.MySqlProxyServer.Sockets
         public byte[][] Packets { get; set; }
     }
 
-    public enum ISocketControllerMessageType
+    public class HandshakeResponseMessage : ISocketControllerMessage
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="HandshakeResponseMessage"/> class.
+        /// </summary>
+        /// <param name="protocol">Handshake response protocol.</param>
+        public HandshakeResponseMessage(HandshakeResponse protocol)
+        {
+            this.Protocol = protocol;
+        }
+
+        /// <inheritdoc/>
+        public SocketControllerMessageType Type { get; } = SocketControllerMessageType.HANDSHAKE_RESPONSE;
+
+        /// <summary>
+        /// Gets or sets a handshake response protocol.
+        /// </summary>
+        /// <value>HandshakeResponse instance.</value>
+        public HandshakeResponse Protocol { get; set; }
+    }
+
+    public enum SocketControllerMessageType
     {
         RAW,
         HANDSHAKE,
