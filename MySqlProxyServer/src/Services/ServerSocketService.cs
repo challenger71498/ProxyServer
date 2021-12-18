@@ -4,8 +4,9 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Min.MySqlProxyServer.Sockets;
 
-namespace Min.MySqlProxyServer.Sockets
+namespace Min.MySqlProxyServer
 {
     public class ServerSocketService
     {
@@ -16,7 +17,7 @@ namespace Min.MySqlProxyServer.Sockets
             this.EndPoint = serverEndPoint;
         }
 
-        public async Task<SocketConnection> GetConnection()
+        public async Task<SocketConnection?> GetConnection()
         {
             var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -30,10 +31,8 @@ namespace Min.MySqlProxyServer.Sockets
             {
                 Console.WriteLine($"Error when start connecting... {e.GetType()} {e.Message}");
                 Console.WriteLine($"STACKTRACE: {e.StackTrace}");
-                throw;
+                return null;
             }
-
-            var foo = System.Reactive.Linq.Observable.Empty();
         }
     }
 }

@@ -37,7 +37,7 @@ namespace Min.MySqlProxyServer
 
             var payloadInfo = new PayloadInfo
             {
-                Payload = errorProtocol.ToBinary(),
+                Payload = errorProtocol.ToPayload(),
                 Loopback = true,
             };
 

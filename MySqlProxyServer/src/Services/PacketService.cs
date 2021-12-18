@@ -3,127 +3,50 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reactive;
 using System.Reactive.Linq;
 using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer
 {
-    /// <summary>
-    /// Convert binary packet data to a payload.
-    /// </summary>
-    public class PacketService
+    public class PacketService : IPacketService
     {
-        private readonly Queue<byte[]> payloadQueue;
-        private int initialSequenceId;
+        private readonly PacketFactory packetFactory;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PacketService"/> class.
-        /// </summary>
-        public PacketService()
+        public PacketService(PacketFactory packetFactory)
         {
-            this.payloadQueue = new Queue<byte[]>();
-
-            this.WhenPayloadFlushed = Observable.Empty<PayloadFlushedArgs>();
+            this.packetFactory = packetFactory;
         }
 
-        /// <summary>
-        /// Event handler on payload arrive.
-        /// </summary>
-        public IObservable<PayloadFlushedArgs> WhenPayloadFlushed { get; private set; }
-
-        public byte[][] GetPackets(int sequenceId, byte[] payload)
+        public IObservable<IBinaryData> ToBinaryData(IObservable<IData> dataStream)
         {
-            var output = new List<byte[]>();
-
-            var buffer = payload;
-            var id = sequenceId;
-
-            while (buffer.Length >= 2E24 - 1)
+            return dataStream.Select(data =>
             {
-                id += 1;
+                if (data is IBinaryData binaryData)
+                {
+                    return binaryData;
+                }
 
-                var length = (1024 * 1024 * 16) - 1;
+                if (data is not IPacket packet)
+                {
+                    throw new FormatException("Data format must be IPacket or IBinaryData.");
+                }
 
-                var split = payload[..length];
-                buffer = payload[(length + 1)..];
-
-                var packet = new Packet(split.Length, id, split);
-                output.Add(ToBinary(packet));
-            }
-
-            var last = new Packet(buffer.Length, id, buffer);
-            output.Add(ToBinary(last));
-
-            return output.ToArray();
+                return packet.ToBinary();
+            });
         }
 
-        /// <summary>
-        /// Pushes binary packet data to the queue.
-        /// </summary>
-        /// <param name="packet">Packet to push.</param>
-        public void PushPacket(IPacket packet)
+        public IObservable<IData> FromBinaryData(IObservable<IBinaryData> binaryStream)
         {
-            if (this.payloadQueue.Count == 0)
+            return binaryStream.Select<IBinaryData, IData>(binary =>
             {
-                this.initialSequenceId = packet.SequenceId;
-            }
+                if (!this.packetFactory.IsPacket(binary.Raw))
+                {
+                    return binary;
+                }
 
-            // TODO: Refactor with IObservable.Buffer().
-            this.payloadQueue.Enqueue(packet.Payload);
-
-            if (packet.PayloadLength == 0xffffff)
-            {
-                return;
-            }
-
-            var payload = this.FlushQueue();
-            var payloadFlushedArgs = new PayloadFlushedArgs(this.initialSequenceId, payload);
-
-            this.WhenPayloadFlushed.Append(payloadFlushedArgs);
+                var packet = this.packetFactory.Create(binary.Raw);
+                return packet;
+            });
         }
-
-        private static byte[] ToBinary(IPacket packet)
-        {
-            using var stream = new MemoryStream();
-            using var writer = new BinaryWriter(stream);
-
-            writer.WriteFixedInt(packet.PayloadLength, 3);
-            writer.WriteFixedInt(packet.SequenceId, 1);
-            writer.Write(packet.Payload);
-
-            Console.WriteLine($"STREAM_LEN: {stream.Length}");
-
-            var buffer = stream.GetBuffer();
-            var binary = buffer[..(int)stream.Length];
-
-            return binary;
-        }
-
-        private byte[] FlushQueue()
-        {
-            var output = new List<byte>();
-
-            while (this.payloadQueue.Count > 0)
-            {
-                var binary = this.payloadQueue.Dequeue();
-                output.AddRange(binary);
-            }
-
-            return output.ToArray();
-        }
-    }
-
-    public class PayloadFlushedArgs
-    {
-        public PayloadFlushedArgs(int initialSequenceId, byte[] payload)
-        {
-            this.InitialSequenceId = initialSequenceId;
-            this.Payload = payload;
-        }
-
-        public int InitialSequenceId { get; set; }
-
-        public byte[] Payload { get; set; }
     }
 }

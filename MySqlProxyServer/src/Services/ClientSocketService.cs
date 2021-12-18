@@ -4,8 +4,9 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Reactive.Linq;
+using Min.MySqlProxyServer.Sockets;
 
-namespace Min.MySqlProxyServer.Sockets
+namespace Min.MySqlProxyServer
 {
     /// <summary>
     /// ClientSocketService opens a socket connection at the assigned port.
@@ -48,9 +49,9 @@ namespace Min.MySqlProxyServer.Sockets
             this.listener.Bind(this.EndPoint);
             this.listener.Listen();
 
-            var observable = Observable
-                .FromAsync(this.listener.AcceptAsync)
-                .Select(socket => new SocketConnection(socket));
+            var observable = Observable.FromAsync(() => this.listener.AcceptAsync())
+                .Select(socket => new SocketConnection(socket))
+                .Repeat();
 
             observable.Catch<ISocketConnection, Exception>(this.OnError);
 

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Net;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
-using Min.MySqlProxyServer.Protocol;
-using Min.MySqlProxyServer.Sockets;
 
 namespace Min.MySqlProxyServer
 {
@@ -19,7 +15,9 @@ namespace Min.MySqlProxyServer
             var clientEndPoint = new IPEndPoint(IPAddress.Loopback, 8080);
             var serverEndPoint = new IPEndPoint(IPAddress.Loopback, 3306);
 
-            var server = new Server(clientEndPoint, serverEndPoint);
+            var container = Bind.Create();
+
+            var server = container.GetInstance<ServerFactory>().Create(clientEndPoint, serverEndPoint);
 
             await server.Start();
         }

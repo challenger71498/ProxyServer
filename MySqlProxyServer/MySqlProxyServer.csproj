@@ -8,9 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="stylecop.json" />
     <PackageReference Include="DotNetEnv" Version="2.2.0" />
-    <PackageReference Include="Ninject" Version="3.3.4" />
+    <PackageReference Include="SimpleInjector" Version="5.3.2" />
 
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

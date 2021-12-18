@@ -12,7 +12,7 @@ namespace Min.MySqlProxyServer.Protocol
 
         public string? SqlState { get; set; }
 
-        public byte[] ToBinary()
+        public byte[] ToPayload()
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);

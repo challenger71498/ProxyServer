@@ -1,18 +1,28 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
-using System.Net;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Min.MySqlProxyServer.Sockets;
-using Unity;
 
 namespace Min.MySqlProxyServer
 {
     public class Server
     {
         private readonly ClientSocketService clientSocketService;
-
         private readonly ServerSocketService serverSocketService;
+        private readonly ProxyFactory proxyFactory;
+
+        public Server(
+            ClientSocketService clientSocketService,
+            ServerSocketService serverSocketService,
+            ProxyFactory proxyFactory)
+        {
+            this.clientSocketService = clientSocketService;
+            this.serverSocketService = serverSocketService;
+
+            this.proxyFactory = proxyFactory;
+        }
 
         public async Task Start()
         {
@@ -23,18 +33,28 @@ namespace Min.MySqlProxyServer
                 throw new Exception("Client socket observable is null.");
             }
 
-            whenClientConnected.Subscribe(this.OnClientConnected);
-
             Console.WriteLine($"Server has been succesfully started on port {this.clientSocketService.EndPoint.Port}");
+
+            await whenClientConnected.Do(this.OnClientConnected);
+
+            Console.WriteLine("Cya!");
         }
 
         private async void OnClientConnected(ISocketConnection client)
         {
             var server = await this.serverSocketService.GetConnection();
 
-            var proxy = new Proxy(client, server);
+            if (server == null)
+            {
+                // TODO: Exception handling when cannot create server.
+                Console.WriteLine("Cannot create server. Creating Proxy failed.");
+                return;
+            }
 
-            Console.WriteLine("Socket has been connected");
+            // TODO: Handle proxy lifecycle.
+            var proxy = this.proxyFactory.Create(client, server);
+
+            Console.WriteLine("Client socket has been connected");
         }
     }
 }

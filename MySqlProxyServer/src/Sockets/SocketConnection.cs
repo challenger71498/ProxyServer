@@ -1,5 +1,3 @@
-// Copyright (c) Min. All rights reserved.
-
 using System;
 using System.Net.Sockets;
 using System.Reactive.Linq;
@@ -84,6 +82,8 @@ namespace Min.MySqlProxyServer.Sockets
 
         private IObservable<bool> GetDisconnectedStream()
         {
+            Console.WriteLine("1");
+
             var disconnectedStream = Observable.Interval(TimeSpan.FromMilliseconds(1000))
                 .Select((_) =>
                 {
@@ -91,9 +91,12 @@ namespace Min.MySqlProxyServer.Sockets
                     var available = this.socket.Available == 0;
                     var connected = this.socket.Connected;
 
+                    Console.WriteLine("3");
+                    Console.WriteLine((polled && available) || !connected);
+
                     return (polled && available) || !connected;
                 })
-                .Where(disconnected => disconnected == true);
+                .Where(disconnected => disconnected);
 
             return disconnectedStream;
         }
@@ -104,8 +107,8 @@ namespace Min.MySqlProxyServer.Sockets
 
             var dataStream = Observable
                 .FromAsync(() => this.socket.ReceiveAsync(buffer, SocketFlags.None))
-                .Where((received) => received != 0)
-                .Select((_) => buffer);
+                .Where(received => received != 0)
+                .Select(received => buffer[..received]);
 
             dataStream.Catch<byte[], Exception>(this.OnDataStreamError);
 

@@ -3,13 +3,13 @@
 using System.Linq;
 using Min.MySqlProxyServer.Encryption;
 
-namespace Min.MySqlProxyServer.Sockets
+namespace Min.MySqlProxyServer
 {
-    public class AuthModule
+    public class AuthService
     {
         private HashAlgorithmType hashType;
 
-        public AuthModule(HashAlgorithmType hashAlgorithmType)
+        public AuthService(HashAlgorithmType hashAlgorithmType)
         {
             this.hashType = hashAlgorithmType;
         }

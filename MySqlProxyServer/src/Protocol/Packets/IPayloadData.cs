@@ -1,6 +1,6 @@
 namespace Min.MySqlProxyServer.Protocol
 {
-    public interface IPayloadData
+    public interface IPayloadData : IData
     {
         int InitialSequenceId { get; }
 

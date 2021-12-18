@@ -1,23 +1,18 @@
 using System;
 using System.IO;
+using Min.MySqlProxyServer.Sockets;
 
 namespace Min.MySqlProxyServer.Protocol
 {
     public class PacketFactory
     {
-        public static IPacket? TryCreatePacket(byte[] binary)
+        public IPacket Create(byte[] binary)
         {
-            if (!IsPacket(binary))
-            {
-                return null;
-            }
-
             var packet = new PacketAdapter(binary);
-
             return packet;
         }
 
-        private static bool IsPacket(byte[] binary)
+        public bool IsPacket(byte[] binary)
         {
             using var stream = new MemoryStream(binary);
             using var reader = new BinaryReader(stream);

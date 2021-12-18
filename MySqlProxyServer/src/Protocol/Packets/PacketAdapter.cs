@@ -8,7 +8,7 @@ namespace Min.MySqlProxyServer.Protocol
     /// <summary>
     /// <see cref="PacketAdapter"/> adapts binary data to a payload.
     /// </summary>
-    public class PacketAdapter : IPacket
+    public class PacketAdapter : BasePacket
     {
         public PacketAdapter(byte[] binary)
         {
@@ -26,11 +26,5 @@ namespace Min.MySqlProxyServer.Protocol
 
             this.Payload = reader.ReadBytes(this.PayloadLength);
         }
-
-        public int PayloadLength { get; private set; }
-
-        public int SequenceId { get; private set; }
-
-        public byte[] Payload { get; private set; }
     }
 }

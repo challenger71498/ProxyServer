@@ -2,7 +2,7 @@
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public interface IProtocol
+    public interface IProtocol : IData
     {
 
     }

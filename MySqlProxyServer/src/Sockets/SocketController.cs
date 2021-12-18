@@ -1,8 +1,6 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
-using System.Reactive;
-using System.Threading.Tasks;
 
 namespace Min.MySqlProxyServer.Sockets
 {
@@ -22,18 +20,30 @@ namespace Min.MySqlProxyServer.Sockets
             this.receiver = receiver;
 
             this.WhenMessageCreated = this.sender.GetMessageStream(this.connection.WhenDataReceived);
+
+            this.connection.WhenDisconnected.Subscribe(this.OnDisconnected);
         }
 
+        /// <inheritdoc/>
         public IObservable<ISocketControllerMessage> WhenMessageCreated { get; private set; }
 
+        /// <inheritdoc/>
         public void SetMessageReceiveStream(IObservable<ISocketControllerMessage> messageReceiveStream)
         {
-            this.receiver.GetDataStream(messageReceiveStream).Subscribe(this.OnDataReceived);
+            // TODO: Life cycle management needed.
+            var dataStream = this.receiver.GetDataStream(messageReceiveStream);
+            dataStream.Subscribe(this.OnDataReceived);
         }
 
-        private async void OnDataReceived(byte[] data)
+        private async void OnDataReceived(IBinaryData data)
         {
-            await this.connection.Send(data);
+            await this.connection.Send(data.Raw);
+        }
+
+        private async void OnDisconnected(bool _)
+        {
+            // TODO: Handle disconnected event.
+            Console.WriteLine("Disconnected!");
         }
     }
 }

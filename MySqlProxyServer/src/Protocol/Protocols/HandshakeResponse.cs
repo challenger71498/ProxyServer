@@ -24,7 +24,7 @@ namespace Min.MySqlProxyServer.Protocol
 
         public Dictionary<string, string> Attributes { get; } = new Dictionary<string, string>();
 
-        public byte[] ToBinary()
+        public byte[] ToPayload()
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);

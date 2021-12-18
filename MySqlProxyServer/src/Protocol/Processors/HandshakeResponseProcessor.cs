@@ -21,7 +21,7 @@ namespace Min.MySqlProxyServer
             handshakeResponse.AuthResponse = "foobar";
             handshakeResponse.AuthResponseLength = 7;
 
-            var payload = handshakeResponse.ToBinary();
+            var payload = handshakeResponse.ToPayload();
 
             info = new PayloadInfo { Payload = payload };
             return true;
