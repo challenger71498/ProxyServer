@@ -15,7 +15,7 @@ namespace Min.MySqlProxyServer.Sockets
         private readonly PacketService clientPacketService;
         private readonly PacketService serverPacketService;
 
-        public Proxy(SocketConnection clientConnection, SocketConnection serverConnection)
+        public Proxy(ISocketConnection clientConnection, ISocketConnection serverConnection)
         {
             this.clientPacketService = new PacketService();
             this.serverPacketService = new PacketService();
@@ -32,40 +32,11 @@ namespace Min.MySqlProxyServer.Sockets
                 new HandshakeResponseProcessor(),
             };
 
-            this.client = new SocketController(clientConnection, this.clientPacketService, new PayloadService(clientProtocolFactories, clientProtocolProcessors));
-            this.server = new SocketController(serverConnection, this.serverPacketService);
+            this.client = new SocketController(clientConnection, new MessageSender(), new MessageReceiver());
+            this.server = new SocketController(serverConnection, new MessageSender(), new MessageReceiver());
 
-            this.client.PacketsReadyEventHandler += this.OnClientPacketsReady;
-            this.server.PacketsReadyEventHandler += this.OnServerPacketsReady;
-
-            this.client.DisconnectedEventHandler += this.OnClientDisconnected;
-            this.server.DisconnectedEventHandler += this.OnServerDisconnected;
-
-            // Console.WriteLine("Proxy has been successfully created");
-        }
-
-        private async void OnClientPacketsReady(object? sender, byte[][] packets)
-        {
-            // Console.WriteLine("Trying to send client packets to the server...");
-
-            foreach (var packet in packets)
-            {
-                await this.server.Send(packet);
-            }
-
-            Console.WriteLine("Client packets are sent to the server.");
-        }
-
-        private async void OnServerPacketsReady(object? sender, byte[][] packets)
-        {
-            // Console.WriteLine("Trying to send server packets to the client...");
-
-            foreach (var packet in packets)
-            {
-                await this.client.Send(packet);
-            }
-
-            Console.WriteLine("Server packets are sent to the client.");
+            this.server.SetMessageReceiveStream(this.client.WhenMessageCreated);
+            this.client.SetMessageReceiveStream(this.server.WhenMessageCreated);
         }
 
         private void OnClientDisconnected(object? sender, EventArgs e)

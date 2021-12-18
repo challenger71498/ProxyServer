@@ -11,8 +11,11 @@ namespace Min.MySqlProxyServer.Sockets
     {
         private IPacketService packetService;
 
-        public MessageReceiver(IPacketService packetService)
+        private SequenceIdCounter counter;
+
+        public MessageReceiver(SequenceIdCounter counter, IPacketService packetService)
         {
+            this.counter = counter;
             this.packetService = packetService;
         }
 
@@ -21,14 +24,20 @@ namespace Min.MySqlProxyServer.Sockets
             var dataStream = messageStream
                 .Select(this.PipeMessage)
                 .Select(this.PipeProtocol)
-                .Let((payload) => this.packetService.PipePayload(1, payload))
+                .Let((payload) => this.packetService.PipePayload(this.counter.GetId, payload))
                 .Select(this.PipePacket)
-                .sel;
+                .Catch((Exception e) =>
+                {
+                    throw e;
+                })
+                .Repeat();
+
+            return dataStream;
         }
 
         private IProtocol PipeMessage(ISocketControllerMessage message);
         private byte[] PipeProtocol(IProtocol protocol);
         private IPacket[] PipePayload(byte[] payload);
-        private byte[][] PipePacket(IPacket[] packets);
+        private byte[] PipePacket(IPacket packet);
     }
 }
