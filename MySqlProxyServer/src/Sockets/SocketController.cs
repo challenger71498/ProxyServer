@@ -1,6 +1,7 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,26 @@ using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
+    public class SocketController : ISocketController
+    {
+        private readonly ISocketConnection connection;
+        private readonly MessageSender sender;
+        private readonly MessageReceiver receiver;
+
+        public SocketController(
+            ISocketConnection connection,
+            MessageSender sender,
+            MessageReceiver receiver)
+        {
+            this.connection = connection;
+            this.sender = sender;
+
+            this.WhenMessageCreated = this.sender.GetMessageStream(this.connection.WhenDataReceived);
+        }
+
+        public IObservable<ISocketControllerMessage> WhenMessageCreated { get; private set; }
+    }
+
     // TODO: Move away dummy IPayloadService interface.
     public interface IPayloadService
     {
@@ -17,134 +38,75 @@ namespace Min.MySqlProxyServer.Sockets
     // TODO: Move away dummy IPacketService interface.
     public interface IPacketService
     {
-        IObservable<ISocketControllerMessage> Pipe(IObservable<byte[]> yay);
+        IObservable<IPayloadData> PipePacket(IObservable<IPacket> packetStream);
+
+        IObservable<IPacket> PipePayload(int id, IObservable<byte[]> payload);
     }
 
-    public class SocketController : ISocketController
+    public class PacketService : IPacketService
     {
-        private readonly ISocketConnection connection;
-        private readonly IPacketService packetService;
-        private readonly IPayloadService payloadService;
-
-
-        public SocketController(
-            ISocketConnection connection,
-            IPacketService packetService,
-            IPayloadService payloadService)
+        public IObservable<IPacket> PipePayload(int id, IObservable<byte[]> payloadStream)
         {
-            this.connection = connection;
-            this.packetService = packetService;
-            this.payloadService = payloadService;
-
-            this.WhenMessageCreated = this.GetMessageStream(this.connection.WhenDataReceived);
+            return payloadStream.SelectMany((payload) => this.GetPackets(id, payload));
         }
 
-        public IObservable<ISocketControllerMessage> WhenMessageCreated { get; private set; }
-
-        // NOTE: Create MessageHandler?
-        private IObservable<ISocketControllerMessage> GetMessageStream(IObservable<byte[]> dataStream)
+        public IObservable<IPayloadData> PipePacket(IObservable<IPacket> packetStream)
         {
-            byte[]? captured = null;
+            var payloadStream = packetStream
+                .Buffer(packetStream.Where(this.IsPacketEOF))
+                .Select(this.GetPayload);
 
-            // NOTE: To catch exception from every pipe, observables should be connected by operator.
-            // NOTE: Cannot seperate observables by variables. (ex: fooStream, barStream, bazStream, ...)
-            var messageStream = dataStream
-                .Do(data => captured = data)
-                .Select(this.RawDataPipe)
-                .Select(this.PacketPipe)
-                .Select(this.PayloadPipe)
-                .Select(this.ProtocolPipe)
-                .Catch((SocketControllerException e) =>
-                {
-                    if (captured == null)
-                    {
-                        throw new NullReferenceException("Captured data is null. This should never be happened.");
-                    }
-
-                    var rawMessage = new RawDataMessage(captured);
-                    return Observable.ToObservable(new[] { rawMessage });
-                })
-                .Catch((Exception e) =>
-                {
-                    throw e;
-                })
-                .Repeat();
-
-            return messageStream;
+            return payloadStream;
         }
 
-        IPacket RawDataPipe(byte[] data)
+        private bool IsPacketEOF(IPacket packet)
         {
-            var packet = PacketFactory.TryCreatePacket(data);
-
-            if (packet != null)
-            {
-                return packet;
-            }
-
-            Console.WriteLine("Failed to get packet. Streaming directly to the messenger...");
-            throw new SocketControllerException();
+            return packet.PayloadLength == 0xffffff;
         }
 
-        byte[] PacketPipe(IPacket packet)
+        private IPayloadData GetPayload(IList<IPacket> packets)
         {
-            // Get payload from packet.
-            // Throw SocketControllerException if failed.
-            return null;
-        }
-
-        IProtocol PayloadPipe(byte[] payload)
-        {
-            // Get protocol from packet.
-            // Throw SocketControllerException if failed.
-            return null;
-        }
-
-        ISocketControllerMessage ProtocolPipe(IProtocol protocolStream)
-        {
-            // Create message from the protocol.
-            // Throw SocketControllerException if failed.
-            return null;
-        }
-
-        private async void PayloadSelector(PayloadFlushedArgs e)
-        {
-            var info = new PayloadInfo { Payload = e.Payload, };
-
-            if (this.payloadService != null)
-            {
-                var processed = await this.payloadService.TryProcess(e.Payload);
-
-                if (processed != null)
-                {
-                    info = (PayloadInfo)processed;
-                }
-            }
-        }
-
-        private void Send(PayloadFlushedArgs e)
-        {
-            var packets = this.packetService.GetPackets(e.InitialSequenceId, info.Payload);
-
-            if (!info.Loopback)
-            {
-                this.PacketsReadyEventHandler?.Invoke(sender, packets);
-                return;
-            }
+            var buffer = new List<byte>();
+            int id = -1;
 
             foreach (var packet in packets)
             {
-                await this.connection.Send(packet);
+                if (id == -1)
+                {
+                    id = packet.SequenceId;
+                }
+
+                buffer.AddRange(packet.Payload);
             }
+
+            var payload = buffer.ToArray();
+
+            var payloadData = new PayloadData(id, payload);
+            return payloadData;
         }
 
-        // NOTE: Is it okay to use internal exception?
-        private class SocketControllerException : Exception
+        private IEnumerable<IPacket> GetPackets(int id, byte[] payload)
         {
-            public SocketControllerException()
-            : base("Internal socket controller exception.")
+            var output = new List<IPacket>();
+            var buffer = payload;
+
+            while (buffer.Length >= 2E24 - 1)
             {
+                id += 1;
+
+                var length = (1024 * 1024 * 16) - 1;
+
+                var split = payload[..length];
+                buffer = payload[(length + 1)..];
+
+                var packet = new Packet(split.Length, id, split);
+                output.Add(packet);
             }
+
+            var last = new Packet(buffer.Length, id, buffer);
+            output.Add(last);
+
+            return output;
         }
     }
 }
