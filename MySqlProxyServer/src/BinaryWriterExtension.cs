@@ -43,28 +43,26 @@ namespace System.IO
             }
         }
 
-        public static void WriteFixedString(this BinaryWriter writer, string str, int length)
+        public static void WriteFixedString(this BinaryWriter writer, byte[] binary, int length)
         {
-            var strBinary = DataTypeConverter.FromString(str, Encoding.ASCII);
+            var output = new byte[length];
 
-            var binary = new byte[length];
+            var copyLength = Math.Min(binary.Length, length);
+            binary[..copyLength].CopyTo(output, 0);
 
-            var copyLength = Math.Min(strBinary.Length, length);
-            strBinary[..copyLength].CopyTo(binary, 0);
-
-            writer.Write(binary);
+            writer.Write(output);
         }
 
-        public static void WriteNulTerminatedString(this BinaryWriter writer, string str)
+        public static void WriteNulTerminatedString(this BinaryWriter writer, byte[] binary)
         {
-            writer.WriteFixedString(str, str.Length);
+            writer.WriteFixedString(binary, binary.Length);
             writer.Write('\0');
         }
 
-        public static void WriteLengthEncodedString(this BinaryWriter writer, string str)
+        public static void WriteLengthEncodedString(this BinaryWriter writer, byte[] binary)
         {
-            writer.WriteLengthEncodedInt(str.Length);
-            writer.WriteFixedString(str, str.Length);
+            writer.WriteLengthEncodedInt(binary.Length);
+            writer.WriteFixedString(binary, binary.Length);
         }
     }
 }

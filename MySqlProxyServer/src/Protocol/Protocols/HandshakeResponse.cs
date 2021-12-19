@@ -12,17 +12,19 @@ namespace Min.MySqlProxyServer.Protocol
 
         public int CharacterSet { get; set; }
 
-        public string Username { get; set; }
+        public byte[] Username { get; set; }
 
-        public string AuthResponse { get; set; }
+        public byte[] AuthResponse { get; set; }
 
-        public string Database { get; set; }
+        public byte[] Database { get; set; }
 
-        public string AuthPluginName { get; set; }
+        public byte[] AuthPluginName { get; set; }
 
         public int? AuthResponseLength { get; set; }
 
-        public Dictionary<string, string> Attributes { get; } = new Dictionary<string, string>();
+        public Dictionary<byte[], byte[]> Attributes { get; } = new Dictionary<byte[], byte[]>();
+
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
 
         public byte[] ToPayload()
         {

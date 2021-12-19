@@ -16,14 +16,13 @@ namespace Min.MySqlProxyServer
             try
             {
                 Console.WriteLine(Convert.ToHexString(data));
-                Console.WriteLine(System.Text.Encoding.ASCII.GetString(data));
+                Console.WriteLine(System.Text.Encoding.UTF8.GetString(data));
 
                 protocol = Read(reader);
 
                 if (stream.Position != stream.Length)
                 {
-                    Console.WriteLine($"Reader did not reach EOF. {stream.Position} {stream.Length}");
-                    throw new Exception("Reader did not reach EOF.");
+                    throw new Exception($"Reader {this.GetType()} did not reach EOF. {stream.Position} {stream.Length}");
                 }
 
                 return true;

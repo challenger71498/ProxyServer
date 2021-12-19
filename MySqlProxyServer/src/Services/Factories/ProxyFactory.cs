@@ -3,41 +3,34 @@ namespace Min.MySqlProxyServer.Sockets
     public class ProxyFactory
     {
         private readonly IConnectionDelegatorFactory connectionDelegatorFactory;
-        private readonly ClientMessageSenderFactory clientMessageSenderFactory;
-        private readonly ClientMessageReceiverFactory clientMessageReceiverFactory;
-        private readonly ServerMessageSenderFactory serverMessageSenderFactory;
-        private readonly ServerMessageReceiverFactory serverMessageReceiverFactory;
+        private readonly PayloadSenderService protocolSenderService;
+        private readonly PayloadReceiverService protocolReceiverService;
+        private readonly AuthService authService;
+        private readonly ProtocolService protocolService;
 
         public ProxyFactory(
             IConnectionDelegatorFactory socketControllerFactory,
-            ClientMessageSenderFactory clientMessageSenderFactory,
-            ClientMessageReceiverFactory clientMessageReceiverFactory,
-            ServerMessageSenderFactory serverMessageSenderFactory,
-            ServerMessageReceiverFactory serverMessageReceiverFactory)
+            PayloadSenderService protocolSenderService,
+            PayloadReceiverService protocolReceiverService,
+            AuthService authService,
+            ProtocolService protocolService)
         {
             this.connectionDelegatorFactory = socketControllerFactory;
+            this.protocolSenderService = protocolSenderService;
+            this.protocolReceiverService = protocolReceiverService;
 
-            this.clientMessageSenderFactory = clientMessageSenderFactory;
-            this.clientMessageReceiverFactory = clientMessageReceiverFactory;
-
-            this.serverMessageSenderFactory = serverMessageSenderFactory;
-            this.serverMessageReceiverFactory = serverMessageReceiverFactory;
+            this.authService = authService;
+            this.protocolService = protocolService;
         }
 
         public Proxy Create(ISocketConnection clientConnection, ISocketConnection serverConnection)
         {
-            var clientSender = this.clientMessageSenderFactory.Create();
-            var clientReceiver = this.clientMessageReceiverFactory.Create();
-
-            var serverSender = this.serverMessageSenderFactory.Create();
-            var serverReceiver = this.serverMessageReceiverFactory.Create();
-
             // Note that two connections are reversed.
             // This is because delegator delegates the counterpart of its connection; not the connection itself.
-            var serverDelegator = this.connectionDelegatorFactory.Create(clientConnection, serverSender, serverReceiver);
-            var clientDelegator = this.connectionDelegatorFactory.Create(serverConnection, clientSender, clientReceiver);
+            var serverDelegator = this.connectionDelegatorFactory.Create(clientConnection, this.protocolSenderService, this.protocolReceiverService);
+            var clientDelegator = this.connectionDelegatorFactory.Create(serverConnection, this.protocolSenderService, this.protocolReceiverService);
 
-            var proxy = new Proxy(serverDelegator, clientDelegator);
+            var proxy = new Proxy(clientDelegator, serverDelegator, this.protocolService, this.authService);
             return proxy;
         }
     }

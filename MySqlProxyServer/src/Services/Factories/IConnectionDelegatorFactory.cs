@@ -3,7 +3,7 @@ namespace Min.MySqlProxyServer.Sockets
     public interface IConnectionDelegatorFactory
     {
         // SocketController Create(ISocketConnection connection);
-        ConnectionDelegator Create(ISocketConnection counterConnection, ProtocolSender sender, ProtocolReceiver receiver);
+        ConnectionDelegator Create(ISocketConnection counterConnection, PayloadSenderService sender, PayloadReceiverService receiver);
     }
 
     public class ConnectionDelegatorFactory : IConnectionDelegatorFactory
@@ -20,7 +20,7 @@ namespace Min.MySqlProxyServer.Sockets
         // }
 
         /// <inheritdoc/>
-        public ConnectionDelegator Create(ISocketConnection counterConnection, ProtocolSender sender, ProtocolReceiver receiver)
+        public ConnectionDelegator Create(ISocketConnection counterConnection, PayloadSenderService sender, PayloadReceiverService receiver)
         {
             // var sender = this.senderFactory.Create();
             // var receiver = this.receiverFactory.Create();

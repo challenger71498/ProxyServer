@@ -10,65 +10,31 @@ namespace Min.MySqlProxyServer.Sockets
     public class ConnectionDelegator : IConnectionDelegator
     {
         private readonly ISocketConnection counterConnection;
-        private readonly ProtocolSender sender;
-        private readonly ProtocolReceiver receiver;
-
-        private readonly List<IData> dataList;
-        private readonly IObservable<IData> protocolSendStream;
+        private readonly PayloadSenderService senderService;
+        private readonly PayloadReceiverService receiverService;
 
         public ConnectionDelegator(
             ISocketConnection counterConnection,
-            ProtocolSender sender,
-            ProtocolReceiver receiver)
+            PayloadSenderService sender,
+            PayloadReceiverService receiver)
         {
             this.counterConnection = counterConnection;
-            this.sender = sender;
-            this.receiver = receiver;
+            this.senderService = sender;
+            this.receiverService = receiver;
 
-            var protocolReceivedStream = this.sender.GetProtocolStream(this.counterConnection.WhenDataReceived);
-
-            protocolReceivedStream.Subscribe(data =>
-            {
-                if (sendBack)
-                {
-                    this.protocolSendStream.Append(newData);
-                    return;
-                }
-
-                // Send a message?
-                messageSendStream.Append(message);
-            });
-
+            this.WhenDataCreated = this.senderService.GetPayloadStream(this.counterConnection.WhenDataReceived);
             this.counterConnection.WhenDisconnected.Subscribe(this.OnDisconnected);
         }
 
         /// <inheritdoc/>
-        public IObservable<ISocketControllerMessage> WhenMessageCreated { get; private set; }
+        public IObservable<IData> WhenDataCreated { get; private set; }
 
         /// <inheritdoc/>
-        public void SetMessageReceiveStream(IObservable<ISocketControllerMessage> messageReceiveStream)
+        public void SetDataReceiveStream(IObservable<IData> dataStream)
         {
-            var protocolStream = messageReceiveStream.Select<ISocketControllerMessage, IData>(message =>
-            {
-                if (message is RawDataMessage rawDataMessage)
-                {
-                    return new BinaryData(rawDataMessage.Raw);
-                }
-
-                if (message is IProtocolMessage protocolMessage)
-                {
-                    // Do something...
-                    return protocolMessage.Protocol;
-                }
-
-                throw new Exception("This should not be happened. Message is not RawDataMessage or IProtocolMessage.");
-            });
-
-
-
             // TODO: Life cycle management needed.
-            var dataStream = this.receiver.GetDataStream(this.protocolSendStream);
-            dataStream.Subscribe(this.OnDataReceived);
+            var receivedStream = this.receiverService.GetDataStream(dataStream);
+            receivedStream.Subscribe(this.OnDataReceived);
         }
 
         private async void OnDataReceived(IBinaryData data)

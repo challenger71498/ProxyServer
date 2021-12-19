@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
 {
     public class AuthSwitchResponse : IWritableProtocol
     {
-        public string AuthPluginResponse { get; set; }
+        public byte[] AuthPluginResponse { get; set; }
+
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
 
         public byte[] ToPayload()
         {

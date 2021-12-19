@@ -4,31 +4,27 @@ using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public class ProtocolSender
+    public class PayloadSenderService
     {
         protected readonly IPacketService packetService;
         protected readonly IPayloadService payloadService;
-        protected readonly IProtocolService protocolService;
 
-        public ProtocolSender(
+        public PayloadSenderService(
             IPacketService packetService,
-            IPayloadService payloadService,
-            IProtocolService protocolService)
+            IPayloadService payloadService)
         {
             this.packetService = packetService;
             this.payloadService = payloadService;
-            this.protocolService = protocolService;
         }
 
-        public IObservable<IData> GetProtocolStream(IObservable<byte[]> dataStream)
+        public IObservable<IData> GetPayloadStream(IObservable<byte[]> dataStream)
         {
-            var messageStream = dataStream
+            var payloadStream = dataStream
                 .Select(binary => new BinaryData(binary))
                 .Let(this.packetService.FromBinaryData)
-                .Let(this.payloadService.FromPacket)
-                .Let(this.protocolService.FromPayload);
+                .Let(this.payloadService.FromPacket);
 
-            return messageStream;
+            return payloadStream;
         }
     }
 

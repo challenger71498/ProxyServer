@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public struct QueryCommand : IProtocol
+    public class QueryCommand : IProtocol
     {
-        public string Query { get; set; }
+        public byte[] Query { get; set; }
+
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
     }
 }

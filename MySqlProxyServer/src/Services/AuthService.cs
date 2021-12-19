@@ -8,18 +8,15 @@ namespace Min.MySqlProxyServer
 {
     public class AuthService
     {
-        public byte[] GetAuthData(HashAlgorithmType type, string password, string nonce)
+        public byte[] GetAuthData(HashAlgorithmType type, byte[] password, byte[] nonce)
         {
-            var passwordBinary = Encoding.ASCII.GetBytes(password);
-            var nonceBinary = Encoding.ASCII.GetBytes(nonce);
-
             using var hash = HashAlgorithmFactory.Create(type);
 
-            var firstHashed = hash.ComputeHash(passwordBinary);
+            var firstHashed = hash.ComputeHash(password);
             var secondHashed = hash.ComputeHash(firstHashed);
 
             var concat = new byte[secondHashed.Length + nonce.Length];
-            nonceBinary.CopyTo(concat, 0);
+            nonce.CopyTo(concat, 0);
             secondHashed.CopyTo(concat, nonce.Length);
 
             var thirdHashed = hash.ComputeHash(concat);

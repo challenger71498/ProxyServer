@@ -1,13 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public struct Handshake : IProtocol
+    public class Handshake : IProtocol
     {
         public int ProtocolVersion { get; set; }
 
-        public string ServerVersion { get; set; }
+        public byte[] ServerVersion { get; set; }
 
         public int ConnectionId { get; set; }
 
@@ -15,10 +16,20 @@ namespace Min.MySqlProxyServer.Protocol
 
         public CapabilityFlag Capability { get; set; }
 
-        public string? AuthPluginData { get; set; }
+        public byte[]? AuthPluginData { get; set; }
 
-        public string? AuthPluginName { get; set; }
+        public byte[]? AuthPluginName { get; set; }
 
         public StatusFlag StatusFlag { get; set; }
+
+        public List<Type> NextProtocolFactories => new()
+        {
+            typeof(HandshakeResponse),
+        };
+
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = new List<IProtocolFactory>
+        {
+            new HandShakeResponseFactory(),
+        };
     }
 }

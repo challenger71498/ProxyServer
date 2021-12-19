@@ -28,7 +28,7 @@ namespace Min.MySqlProxyServer
 
                 if (data is not IPacket packet)
                 {
-                    throw new FormatException("Data format must be IPacket or IBinaryData.");
+                    throw new FormatException($"Data format {data.GetType()} must be IPacket or IBinaryData.");
                 }
 
                 return packet.ToBinary();

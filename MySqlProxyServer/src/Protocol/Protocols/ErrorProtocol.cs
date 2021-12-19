@@ -1,16 +1,19 @@
 // Copyright (c) Min. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 
 namespace Min.MySqlProxyServer.Protocol
 {
-    public struct ErrorProtocol : IWritableProtocol
+    public class ErrorProtocol : IWritableProtocol
     {
         public int ErrorCode { get; set; }
 
-        public string ErrorMessage { get; set; }
+        public byte[] ErrorMessage { get; set; }
 
-        public string? SqlState { get; set; }
+        public byte[]? SqlState { get; set; }
+
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
 
         public byte[] ToPayload()
         {
@@ -23,7 +26,7 @@ namespace Min.MySqlProxyServer.Protocol
 
             if (this.SqlState != null)
             {
-                writer.WriteFixedString("#", 1);
+                writer.WriteFixedString(System.Text.Encoding.ASCII.GetBytes("#"), 1);
                 writer.WriteFixedString(this.SqlState, 5);
             }
 

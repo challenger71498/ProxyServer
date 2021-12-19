@@ -4,29 +4,27 @@ namespace Min.MySqlProxyServer
 {
     public interface IMessageSenderFactory
     {
-        ProtocolSender Create();
+        PayloadSenderService Create();
     }
 
     // NOTE: Need?
-    public class ProtocolSenderFactory
+    public class PayloadSenderFactory
     {
         protected readonly IPacketService packetService;
         protected readonly IPayloadService payloadService;
-        protected readonly IProtocolService protocolService;
 
-        public ProtocolSenderFactory(
+        public PayloadSenderFactory(
             IPacketService packetService,
             IPayloadService payloadService,
             IProtocolService protocolService)
         {
             this.packetService = packetService;
             this.payloadService = payloadService;
-            this.protocolService = protocolService;
         }
 
-        public ProtocolSender Create()
+        public PayloadSenderService Create()
         {
-            var sender = new ProtocolSender(this.packetService, this.payloadService, this.protocolService);
+            var sender = new PayloadSenderService(this.packetService, this.payloadService);
             return sender;
         }
     }
@@ -117,21 +115,18 @@ namespace Min.MySqlProxyServer
     {
         protected readonly IPacketService packetService;
         protected readonly IPayloadService payloadService;
-        protected readonly IProtocolService protocolService;
 
         public ProtocolReceiverFactory(
             IPacketService packetService,
-            IPayloadService payloadService,
-            IProtocolService protocolService)
+            IPayloadService payloadService)
         {
             this.packetService = packetService;
             this.payloadService = payloadService;
-            this.protocolService = protocolService;
         }
 
-        public ProtocolReceiver Create()
+        public PayloadReceiverService Create()
         {
-            var receiver = new ProtocolReceiver(this.packetService, this.payloadService, this.protocolService);
+            var receiver = new PayloadReceiverService(this.packetService, this.payloadService);
             return receiver;
         }
     }

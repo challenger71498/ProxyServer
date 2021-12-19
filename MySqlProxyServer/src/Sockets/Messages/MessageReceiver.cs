@@ -6,30 +6,22 @@ using Min.MySqlProxyServer.Protocol;
 namespace Min.MySqlProxyServer.Sockets
 {
 
-    public class ProtocolReceiver
+    public class PayloadReceiverService
     {
         protected readonly IPacketService packetService;
         protected readonly IPayloadService payloadService;
-        protected readonly IProtocolService protocolService;
-        private int id;
 
-        public ProtocolReceiver(
+        public PayloadReceiverService(
             IPacketService packetService,
-            IPayloadService payloadService,
-            IProtocolService protocolService)
+            IPayloadService payloadService)
         {
-            this.id = 1;
-
             this.packetService = packetService;
             this.payloadService = payloadService;
-            this.protocolService = protocolService;
         }
 
-        public IObservable<IBinaryData> GetDataStream(IObservable<IData> protocolStream)
+        public IObservable<IBinaryData> GetDataStream(IObservable<IData> payloadStream)
         {
-            var dataStream = protocolStream
-                .Do(this.SequenceIdSetter)
-                .Let(protocol => this.protocolService.ToPayload(this.id, protocol))
+            var dataStream = payloadStream
                 .Let(this.payloadService.ToPacket)
                 .Let(this.packetService.ToBinaryData)
                 .Catch((Exception e) =>
@@ -41,16 +33,6 @@ namespace Min.MySqlProxyServer.Sockets
                 .Repeat();
 
             return dataStream;
-        }
-
-        private void SequenceIdSetter(IData data)
-        {
-            if (data.GetType() != typeof(ICommandProtocol))
-            {
-                return;
-            }
-
-            this.id = 0;
         }
     }
 

@@ -6,11 +6,11 @@ namespace Min.MySqlProxyServer
 {
     public class Controller
     {
-        private readonly ProtocolSender sender;
-        private readonly ProtocolReceiver receiver;
+        private readonly PayloadSenderService sender;
+        private readonly PayloadReceiverService receiver;
 
         public Controller(
-            ProtocolSenderFactory senderFactory,
+            PayloadSenderFactory senderFactory,
             ProtocolReceiverFactory receiverFactory)
         {
             this.sender = senderFactory.Create();

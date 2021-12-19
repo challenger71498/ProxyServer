@@ -6,8 +6,8 @@ namespace Min.MySqlProxyServer.Sockets
 {
     public interface IConnectionDelegator
     {
-        IObservable<ISocketControllerMessage> WhenMessageCreated { get; }
+        IObservable<IData> WhenDataCreated { get; }
 
-        void SetMessageReceiveStream(IObservable<ISocketControllerMessage> messageReceiveStream);
+        void SetDataReceiveStream(IObservable<IData> dataReceiveStream);
     }
 }

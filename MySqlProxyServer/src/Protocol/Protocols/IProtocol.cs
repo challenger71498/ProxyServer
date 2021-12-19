@@ -1,9 +1,9 @@
-// Copyright (c) Min. All rights reserved.
+using System.Collections.Generic;
 
 namespace Min.MySqlProxyServer.Protocol
 {
     public interface IProtocol : IData
     {
-
+        IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; }
     }
 }

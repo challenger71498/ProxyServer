@@ -1,6 +1,8 @@
 namespace System.IO
 {
+    using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
 
     public static class BinaryReaderExtension
@@ -39,17 +41,14 @@ namespace System.IO
             return number;
         }
 
-        public static string ReadFixedString(this BinaryReader reader, int length)
+        public static byte[] ReadFixedString(this BinaryReader reader, int length)
         {
-            var binary = reader.ReadBytes(length);
-
-            var str = Encoding.ASCII.GetString(binary);
-            return str;
+            return reader.ReadBytes(length);
         }
 
-        public static string ReadNulTerminatedString(this BinaryReader reader)
+        public static byte[] ReadNulTerminatedString(this BinaryReader reader)
         {
-            var stringBuilder = new StringBuilder();
+            var bytes = new List<byte>();
 
             while (reader.BaseStream.Position < reader.BaseStream.Length)
             {
@@ -58,36 +57,59 @@ namespace System.IO
 
                 if (letter == '\0')
                 {
-                    return stringBuilder.ToString();
+                    return bytes.ToArray();
                 }
 
-                stringBuilder.Append(letter);
+                bytes.Add(binary);
             }
+
+            // var stringBuilder = new StringBuilder();
+
+            // while (reader.BaseStream.Position < reader.BaseStream.Length)
+            // {
+            //     var binary = reader.ReadByte();
+            //     var letter = (char)binary;
+
+            //     if (letter == '\0')
+            //     {
+            //         return stringBuilder.ToString();
+            //     }
+
+            //     stringBuilder.Append(letter);
+            // }
 
             throw new Exception("Unexpected EOF."); // TODO: Exception handling
         }
 
-        public static string ReadLengthEncodedString(this BinaryReader reader)
+        public static byte[] ReadLengthEncodedString(this BinaryReader reader)
         {
             var length = reader.ReadLengthEncodedInt();
-            var str = reader.ReadFixedString(length);
-
-            return str;
+            return reader.ReadFixedString(length);
         }
 
-        public static string ReadRestOfPacketString(this BinaryReader reader)
+        public static byte[] ReadRestOfPacketString(this BinaryReader reader)
         {
-            var stringBuilder = new StringBuilder();
+            var bytes = new List<byte>();
 
             while (reader.BaseStream.Position < reader.BaseStream.Length)
             {
                 var binary = reader.ReadByte();
-                var letter = (char)binary;
-
-                stringBuilder.Append(letter);
+                bytes.Add(binary);
             }
 
-            return stringBuilder.ToString();
+            return bytes.ToArray();
+
+            // var stringBuilder = new StringBuilder();
+
+            // while (reader.BaseStream.Position < reader.BaseStream.Length)
+            // {
+            //     var binary = reader.ReadByte();
+            //     var letter = (char)binary;
+
+            //     stringBuilder.Append(letter);
+            // }
+
+            // return stringBuilder.ToString();
         }
     }
 }

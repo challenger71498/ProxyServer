@@ -91,5 +91,7 @@ dotnet_diagnostic.SA1009.severity = None
 
 dotnet_diagnostic.SA1011.severity = None
 
+dotnet_diagnostic.SA1000.severity = None
+
 # header
 dotnet_diagnostic.SA1633.severity = None

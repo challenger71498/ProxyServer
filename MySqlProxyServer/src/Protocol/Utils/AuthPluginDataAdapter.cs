@@ -3,11 +3,11 @@ namespace Min.MySqlProxyServer.Protocol
     public struct AuthPluginDataAdapter
     {
         // fields
-        public string? primary;
-        public string? secondary;
+        public byte[]? primary;
+        public byte[]? secondary;
 
         // properties
-        public string? Value
+        public byte[]? Value
         {
             get
             {
@@ -16,7 +16,11 @@ namespace Min.MySqlProxyServer.Protocol
                     return null;
                 }
 
-                return this.primary + this.secondary;
+                var concat = new byte[this.primary.Length + this.secondary.Length];
+                this.primary.CopyTo(concat, 0);
+                this.secondary.CopyTo(concat, this.primary.Length);
+
+                return concat;
             }
         }
     }
