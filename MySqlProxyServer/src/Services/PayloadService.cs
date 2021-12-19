@@ -37,7 +37,8 @@ namespace Min.MySqlProxyServer
 
                     return packetStream
                         .Buffer(packetStream.Where(this.IsPacketEOF))
-                        .Select(this.GetPayload);
+                        .Select(this.GetPayload)
+                        .Do(data => Console.WriteLine(data.InitialSequenceId));
                 });
         }
 

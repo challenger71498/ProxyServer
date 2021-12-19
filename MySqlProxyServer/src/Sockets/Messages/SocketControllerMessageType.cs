@@ -8,5 +8,6 @@ namespace Min.MySqlProxyServer.Sockets
         HANDSHAKE,
         HANDSHAKE_RESPONSE,
         SSL_CONNECTION_REQUEST,
+        AUTH_SWITCH_RESPONSE,
     }
 }

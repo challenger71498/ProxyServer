@@ -2,8 +2,9 @@
 
 using System;
 using System.IO;
+using Min.MySqlProxyServer.Protocol;
 
-namespace Min.MySqlProxyServer.Protocol
+namespace Min.MySqlProxyServer
 {
     public class HandShakeResponseFactory : BaseProtocolFactory
     {
@@ -21,13 +22,13 @@ namespace Min.MySqlProxyServer.Protocol
 
             if (handshakeResponse.Capability.HasFlag(CapabilityFlag.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA))
             {
-                handshakeResponse.AuthResponseLength = reader.ReadLengthEncodedInt();
-                handshakeResponse.AuthResponse = reader.ReadNulTerminatedString();
+                var length = handshakeResponse.AuthResponseLength = reader.ReadLengthEncodedInt();
+                handshakeResponse.AuthResponse = reader.ReadFixedString((int)length);
             }
             else if (handshakeResponse.Capability.HasFlag(CapabilityFlag.CLIENT_SECURE_CONNECTION))
             {
-                var authResponseLength = reader.ReadFixedInt(1);
-                handshakeResponse.AuthResponse = reader.ReadNulTerminatedString();
+                var length = reader.ReadFixedInt(1);
+                handshakeResponse.AuthResponse = reader.ReadFixedString((int)length);
             }
             else
             {

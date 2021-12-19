@@ -1,4 +1,6 @@
-namespace Min.MySqlProxyServer.Protocol
+using Min.MySqlProxyServer.Protocol;
+
+namespace Min.MySqlProxyServer
 {
     public interface IProtocolFactory
     {

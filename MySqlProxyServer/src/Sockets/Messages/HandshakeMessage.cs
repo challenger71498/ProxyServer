@@ -1,5 +1,7 @@
 // Copyright (c) Min. All rights reserved.
 
+using Min.MySqlProxyServer.Protocol;
+
 namespace Min.MySqlProxyServer.Sockets
 {
     public class HandshakeMessage : ISocketControllerMessage
@@ -8,9 +10,9 @@ namespace Min.MySqlProxyServer.Sockets
         /// Initializes a new instance of the <see cref="HandshakeMessage"/> class.
         /// </summary>
         /// <param name="packets">Array of packets.</param>
-        public HandshakeMessage(byte[][] packets)
+        public HandshakeMessage(Handshake protocol)
         {
-            this.Packets = packets;
+            this.Protocol = protocol;
         }
 
         /// <inheritdoc/>
@@ -20,6 +22,6 @@ namespace Min.MySqlProxyServer.Sockets
         /// Gets or sets a list of packet.
         /// </summary>
         /// <value>Array of packets.</value>
-        public byte[][] Packets { get; set; }
+        public Handshake Protocol { get; set; }
     }
 }

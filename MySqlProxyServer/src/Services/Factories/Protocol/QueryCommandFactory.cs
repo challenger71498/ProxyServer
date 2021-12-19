@@ -2,8 +2,9 @@
 
 using System;
 using System.IO;
+using Min.MySqlProxyServer.Protocol;
 
-namespace Min.MySqlProxyServer.Protocol
+namespace Min.MySqlProxyServer
 {
     public class QueryCommandFactory : BaseProtocolFactory
     {

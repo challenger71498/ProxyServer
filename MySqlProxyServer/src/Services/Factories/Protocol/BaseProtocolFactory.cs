@@ -2,8 +2,9 @@
 
 using System;
 using System.IO;
+using Min.MySqlProxyServer.Protocol;
 
-namespace Min.MySqlProxyServer.Protocol
+namespace Min.MySqlProxyServer
 {
     public abstract class BaseProtocolFactory : IProtocolFactory
     {
@@ -14,6 +15,9 @@ namespace Min.MySqlProxyServer.Protocol
 
             try
             {
+                Console.WriteLine(Convert.ToHexString(data));
+                Console.WriteLine(System.Text.Encoding.ASCII.GetString(data));
+
                 protocol = Read(reader);
 
                 if (stream.Position != stream.Length)
@@ -26,10 +30,11 @@ namespace Min.MySqlProxyServer.Protocol
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Error! {e.GetType()} {e.Message}");
-                Console.WriteLine(e.StackTrace);
+                // Console.WriteLine($"Error! {e.GetType()} {e.Message}");
+                // Console.WriteLine(e.StackTrace);
 
-                protocol = default(HandshakeResponse);
+                // TODO: Handle exception properly.
+                protocol = null;
                 return false;
             }
         }

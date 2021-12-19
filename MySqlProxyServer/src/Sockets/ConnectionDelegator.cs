@@ -1,27 +1,27 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
+using System.Reactive.Linq;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public class SocketController : ISocketController
+    public class ConnectionDelegator : IConnectionDelegator
     {
-        private readonly ISocketConnection connection;
+        private readonly ISocketConnection counterConnection;
         private readonly MessageSender sender;
         private readonly MessageReceiver receiver;
 
-        public SocketController(
-            ISocketConnection connection,
+        public ConnectionDelegator(
+            ISocketConnection counterConnection,
             MessageSender sender,
             MessageReceiver receiver)
         {
-            this.connection = connection;
+            this.counterConnection = counterConnection;
             this.sender = sender;
             this.receiver = receiver;
 
-            this.WhenMessageCreated = this.sender.GetMessageStream(this.connection.WhenDataReceived);
-
-            this.connection.WhenDisconnected.Subscribe(this.OnDisconnected);
+            this.WhenMessageCreated = this.sender.GetMessageStream(this.counterConnection.WhenDataReceived);
+            this.counterConnection.WhenDisconnected.Subscribe(this.OnDisconnected);
         }
 
         /// <inheritdoc/>
@@ -37,7 +37,7 @@ namespace Min.MySqlProxyServer.Sockets
 
         private async void OnDataReceived(IBinaryData data)
         {
-            await this.connection.Send(data.Raw);
+            await this.counterConnection.Send(data.Raw);
         }
 
         private async void OnDisconnected(bool _)

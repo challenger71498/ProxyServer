@@ -45,11 +45,17 @@ namespace Min.MySqlProxyServer.Protocol
                 }
 
                 writer.WriteLengthEncodedInt((int)this.AuthResponseLength);
-                writer.WriteNulTerminatedString(this.AuthResponse);
+                writer.WriteFixedString(this.AuthResponse, (int)this.AuthResponseLength);
             }
             else if (this.Capability.HasFlag(CapabilityFlag.CLIENT_SECURE_CONNECTION))
             {
-                writer.WriteNulTerminatedString(this.AuthResponse);
+                if (this.AuthResponseLength == null)
+                {
+                    throw new Exception("CapabilityFlag CLIENT_SECURE_CONNECTION is set, but AuthResponseLength is null");
+                }
+
+                writer.WriteFixedInt((int)this.AuthResponseLength, 1);
+                writer.WriteFixedString(this.AuthResponse, (int)this.AuthResponseLength);
             }
             else
             {

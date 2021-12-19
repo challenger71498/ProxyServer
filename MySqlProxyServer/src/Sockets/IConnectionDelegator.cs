@@ -4,7 +4,7 @@ using System;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public interface ISocketController
+    public interface IConnectionDelegator
     {
         IObservable<ISocketControllerMessage> WhenMessageCreated { get; }
 

@@ -30,6 +30,11 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.WhenDisconnected = this.GetDisconnectedStream();
             this.WhenDataReceived = this.GetDataStream();
+
+            this.WhenDisconnected.Subscribe(_ =>
+            {
+                // this.Disconnect();
+            });
         }
 
         /// <inheritdoc [cref="ISocketConnection"] />
@@ -68,6 +73,7 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.Connected = false;
 
+            // TODO: Close socket gracefully.
             this.socket.Shutdown(SocketShutdown.Receive);
             this.socket.Close();
         }
@@ -82,21 +88,19 @@ namespace Min.MySqlProxyServer.Sockets
 
         private IObservable<bool> GetDisconnectedStream()
         {
-            Console.WriteLine("1");
-
+            // TODO: Emit stream only once.
             var disconnectedStream = Observable.Interval(TimeSpan.FromMilliseconds(1000))
+                .TakeWhile(_ => this.Connected)
                 .Select((_) =>
                 {
                     var polled = this.socket.Poll(1000, SelectMode.SelectRead);
                     var available = this.socket.Available == 0;
                     var connected = this.socket.Connected;
 
-                    Console.WriteLine("3");
-                    Console.WriteLine((polled && available) || !connected);
-
                     return (polled && available) || !connected;
                 })
-                .Where(disconnected => disconnected);
+                .Where(disconnected => disconnected)
+                .Do(_ => this.Connected = false);
 
             return disconnectedStream;
         }
@@ -105,6 +109,7 @@ namespace Min.MySqlProxyServer.Sockets
         {
             var buffer = new byte[(1024 * 1024 * 16) + 4];
 
+            // TODO: Handle stream on disconnected.
             var dataStream = Observable
                 .FromAsync(() => this.socket.ReceiveAsync(buffer, SocketFlags.None))
                 .Where(received => received != 0)
@@ -117,8 +122,7 @@ namespace Min.MySqlProxyServer.Sockets
 
         private IObservable<byte[]> OnDataStreamError(Exception e)
         {
-            // TODO: Error handling
-
+            // TODO: Exception handling
             return Observable.Empty<byte[]>();
         }
     }

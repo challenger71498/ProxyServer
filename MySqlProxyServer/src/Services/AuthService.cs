@@ -1,28 +1,25 @@
 // Copyright (c) Min. All rights reserved.
 
 using System.Linq;
+using System.Text;
 using Min.MySqlProxyServer.Encryption;
 
 namespace Min.MySqlProxyServer
 {
     public class AuthService
     {
-        private HashAlgorithmType hashType;
-
-        public AuthService(HashAlgorithmType hashAlgorithmType)
+        public byte[] GetAuthData(HashAlgorithmType type, string password, string nonce)
         {
-            this.hashType = hashAlgorithmType;
-        }
+            var passwordBinary = Encoding.ASCII.GetBytes(password);
+            var nonceBinary = Encoding.ASCII.GetBytes(nonce);
 
-        public byte[] GetAuthData(byte[] password, byte[] nonce)
-        {
-            using var hash = HashAlgorithmFactory.Create(this.hashType);
+            using var hash = HashAlgorithmFactory.Create(type);
 
-            var firstHashed = hash.ComputeHash(password);
+            var firstHashed = hash.ComputeHash(passwordBinary);
             var secondHashed = hash.ComputeHash(firstHashed);
 
             var concat = new byte[secondHashed.Length + nonce.Length];
-            nonce.CopyTo(concat, 0);
+            nonceBinary.CopyTo(concat, 0);
             secondHashed.CopyTo(concat, nonce.Length);
 
             var thirdHashed = hash.ComputeHash(concat);

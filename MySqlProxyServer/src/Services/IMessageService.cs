@@ -19,16 +19,16 @@ namespace Min.MySqlProxyServer
         public IObservable<IData> ToProtocol(IObservable<ISocketControllerMessage> messageStream)
         {
             return messageStream.Select<ISocketControllerMessage, IData>(message =>
-            {
-                if (message.Type == SocketControllerMessageType.RAW)
                 {
-                    var rawMessage = (RawDataMessage)message;
+                    if (message.Type == SocketControllerMessageType.RAW)
+                    {
+                        var rawMessage = (RawDataMessage)message;
 
-                    return new BinaryData(rawMessage.Raw);
-                }
+                        return new BinaryData(rawMessage.Raw);
+                    }
 
-                return this.OnMessageReceived(message);
-            });
+                    return this.OnMessageReceived(message);
+                });
         }
 
         public IObservable<ISocketControllerMessage> FromProtocol(IObservable<IData> dataStream)
@@ -61,33 +61,6 @@ namespace Min.MySqlProxyServer
         protected virtual ISocketControllerMessage OnProtocolReceived(IProtocol protocol)
         {
             return null;
-        }
-    }
-
-
-    public class ClientMessageService : MessageService
-    {
-        protected override IProtocol OnMessageReceived(ISocketControllerMessage message)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ISocketControllerMessage OnProtocolReceived(IProtocol protocol)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    public class ServerMessageService : MessageService
-    {
-        protected override IProtocol OnMessageReceived(ISocketControllerMessage message)
-        {
-            throw new NotImplementedException();
-        }
-
-        protected override ISocketControllerMessage OnProtocolReceived(IProtocol protocol)
-        {
-            throw new NotImplementedException();
         }
     }
 }

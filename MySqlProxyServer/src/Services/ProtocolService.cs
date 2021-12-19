@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using Min.MySqlProxyServer.Protocol;
 using Min.MySqlProxyServer.Sockets;
@@ -9,16 +10,17 @@ namespace Min.MySqlProxyServer
     {
         private readonly IPacketService packetService;
         private readonly IPayloadService payloadService;
-        private readonly IProtocolFactory[] factories;
+        private readonly IEnumerable<IProtocolFactory> factories;
 
         public ProtocolService(
             IPacketService packetService,
-            IPayloadService payloadService)
+            IPayloadService payloadService,
+            IEnumerable<IProtocolFactory> factories)
         {
             this.packetService = packetService;
             this.payloadService = payloadService;
 
-            this.factories = Array.Empty<IProtocolFactory>();
+            this.factories = factories;
         }
 
         public IObservable<IData> ToPayload(int initialSequenceId, IObservable<IData> dataStream)

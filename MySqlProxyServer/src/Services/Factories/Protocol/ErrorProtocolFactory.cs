@@ -1,8 +1,9 @@
 // Copyright (c) Min. All rights reserved.
 
 using System.IO;
+using Min.MySqlProxyServer.Protocol;
 
-namespace Min.MySqlProxyServer.Protocol
+namespace Min.MySqlProxyServer
 {
     public class ErrorProtocolFactory : BaseProtocolFactory
     {

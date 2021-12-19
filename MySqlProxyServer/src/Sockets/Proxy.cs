@@ -4,12 +4,12 @@ namespace Min.MySqlProxyServer.Sockets
 {
     public class Proxy
     {
-        private readonly ISocketController client;
-        private readonly ISocketController server;
+        private readonly IConnectionDelegator client;
+        private readonly IConnectionDelegator server;
 
         public Proxy(
-            ISocketController client,
-            ISocketController server)
+            IConnectionDelegator client,
+            IConnectionDelegator server)
         {
             this.client = client;
             this.server = server;
