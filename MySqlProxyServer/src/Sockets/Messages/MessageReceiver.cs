@@ -6,14 +6,14 @@ using Min.MySqlProxyServer.Protocol;
 namespace Min.MySqlProxyServer.Sockets
 {
 
-    public abstract class MessageReceiver
+    public class ProtocolReceiver
     {
         protected readonly IPacketService packetService;
         protected readonly IPayloadService payloadService;
         protected readonly IProtocolService protocolService;
         private int id;
 
-        public MessageReceiver(
+        public ProtocolReceiver(
             IPacketService packetService,
             IPayloadService payloadService,
             IProtocolService protocolService)
@@ -25,10 +25,9 @@ namespace Min.MySqlProxyServer.Sockets
             this.protocolService = protocolService;
         }
 
-        public IObservable<IBinaryData> GetDataStream(IObservable<ISocketControllerMessage> messageStream)
+        public IObservable<IBinaryData> GetDataStream(IObservable<IData> protocolStream)
         {
-            var dataStream = messageStream
-                .Select(this.OnMessageReceived)
+            var dataStream = protocolStream
                 .Do(this.SequenceIdSetter)
                 .Let(protocol => this.protocolService.ToPayload(this.id, protocol))
                 .Let(this.payloadService.ToPacket)
@@ -44,8 +43,6 @@ namespace Min.MySqlProxyServer.Sockets
             return dataStream;
         }
 
-        protected abstract IData OnMessageReceived(ISocketControllerMessage message);
-
         private void SequenceIdSetter(IData data)
         {
             if (data.GetType() != typeof(ICommandProtocol))
@@ -57,69 +54,69 @@ namespace Min.MySqlProxyServer.Sockets
         }
     }
 
-    public class ClientMessageReceiver : MessageReceiver
-    {
-        private readonly AuthService authService;
+    // public class ClientMessageReceiver : ProtocolReceiver
+    // {
+    //     private readonly AuthService authService;
 
-        public ClientMessageReceiver(
-            IPacketService packetService,
-            IPayloadService payloadService,
-            IProtocolService protocolService,
-            AuthService authService)
-            : base(packetService, payloadService, protocolService)
-        {
-            this.authService = authService;
-        }
+    //     public ClientMessageReceiver(
+    //         IPacketService packetService,
+    //         IPayloadService payloadService,
+    //         IProtocolService protocolService,
+    //         AuthService authService)
+    //         : base(packetService, payloadService, protocolService)
+    //     {
+    //         this.authService = authService;
+    //     }
 
-        protected override IData OnMessageReceived(ISocketControllerMessage message)
-        {
-            if (message is RawDataMessage rawMessage)
-            {
-                var data = new BinaryData(rawMessage.Raw);
-                return data;
-            }
+    //     protected override IData OnMessageReceived(ISocketControllerMessage message)
+    //     {
+    //         if (message is RawDataMessage rawMessage)
+    //         {
+    //             var data = new BinaryData(rawMessage.Raw);
+    //             return data;
+    //         }
 
-            if (message is HandshakeResponseMessage responseMessage)
-            {
-                var protocol = responseMessage.Protocol;
-                return protocol;
-            }
+    //         if (message is HandshakeResponseMessage responseMessage)
+    //         {
+    //             var protocol = responseMessage.Protocol;
+    //             return protocol;
+    //         }
 
-            if (message is AuthSwitchResponseMessage authSwitchResponseMessage)
-            {
-                var protocol = authSwitchResponseMessage.Protocol;
-                var authData = this.authService.GetAuthData(HashAlgorithmType.SHA1, "foobar", "?");
-            }
+    //         if (message is AuthSwitchResponseMessage authSwitchResponseMessage)
+    //         {
+    //             var protocol = authSwitchResponseMessage.Protocol;
+    //             var authData = this.authService.GetAuthData(HashAlgorithmType.SHA1, "foobar", "?");
+    //         }
 
-            throw new Exception("This should not be happened. Message is not a raw type, but could not convert to protocol.");
-        }
-    }
+    //         throw new Exception("This should not be happened. Message is not a raw type, but could not convert to protocol.");
+    //     }
+    // }
 
-    public class ServerMessageReceiver : MessageReceiver
-    {
-        public ServerMessageReceiver(
-            IPacketService packetService,
-            IPayloadService payloadService,
-            IProtocolService protocolService)
-            : base(packetService, payloadService, protocolService)
-        {
-        }
+    // public class ServerMessageReceiver : ProtocolReceiver
+    // {
+    //     public ServerMessageReceiver(
+    //         IPacketService packetService,
+    //         IPayloadService payloadService,
+    //         IProtocolService protocolService)
+    //         : base(packetService, payloadService, protocolService)
+    //     {
+    //     }
 
-        protected override IData OnMessageReceived(ISocketControllerMessage message)
-        {
-            if (message is RawDataMessage rawMessage)
-            {
-                var data = new BinaryData(rawMessage.Raw);
-                return data;
-            }
+    //     protected override IData OnMessageReceived(ISocketControllerMessage message)
+    //     {
+    //         if (message is RawDataMessage rawMessage)
+    //         {
+    //             var data = new BinaryData(rawMessage.Raw);
+    //             return data;
+    //         }
 
-            if (message is HandshakeResponseMessage responseMessage)
-            {
-                var protocol = responseMessage.Protocol;
-                return protocol;
-            }
+    //         if (message is HandshakeResponseMessage responseMessage)
+    //         {
+    //             var protocol = responseMessage.Protocol;
+    //             return protocol;
+    //         }
 
-            throw new Exception("This should not be happened. Message is not a raw type, but could not convert to protocol.");
-        }
-    }
+    //         throw new Exception("This should not be happened. Message is not a raw type, but could not convert to protocol.");
+    //     }
+    // }
 }

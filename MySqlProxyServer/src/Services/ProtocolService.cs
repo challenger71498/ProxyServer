@@ -87,8 +87,7 @@ namespace Min.MySqlProxyServer
 
                     // If IPayloadData, switch back to raw data.
                     return data
-                        .Let(this.payloadService.ToPacket)
-                        .Let(this.packetService.ToBinaryData);
+                        .Let(this.payloadService.ToPacket);
                 });
         }
     }

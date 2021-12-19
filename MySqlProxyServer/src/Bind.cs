@@ -19,11 +19,14 @@ namespace Min.MySqlProxyServer
             container.RegisterSingleton<IMessageService, MessageService>();
             container.RegisterSingleton<AuthService>();
 
-            container.RegisterSingleton<ClientMessageSenderFactory>();
-            container.RegisterSingleton<ClientMessageReceiverFactory>();
+            container.RegisterSingleton<ProtocolSenderFactory>();
+            container.RegisterSingleton<ProtocolReceiverFactory>();
 
-            container.RegisterSingleton<ServerMessageSenderFactory>();
-            container.RegisterSingleton<ServerMessageReceiverFactory>();
+            // container.RegisterSingleton<ClientMessageSenderFactory>();
+            // container.RegisterSingleton<ClientMessageReceiverFactory>();
+
+            // container.RegisterSingleton<ServerMessageSenderFactory>();
+            // container.RegisterSingleton<ServerMessageReceiverFactory>();
 
             container.RegisterSingleton<PacketFactory>();
 

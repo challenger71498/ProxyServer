@@ -4,15 +4,15 @@ using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public class HandshakeMessage : ISocketControllerMessage
+    public class HandshakeMessage : IProtocolMessage
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="HandshakeMessage"/> class.
         /// </summary>
         /// <param name="packets">Array of packets.</param>
-        public HandshakeMessage(Handshake protocol)
+        public HandshakeMessage(Handshake handshake)
         {
-            this.Protocol = protocol;
+            this.Protocol = handshake;
         }
 
         /// <inheritdoc/>
@@ -22,6 +22,6 @@ namespace Min.MySqlProxyServer.Sockets
         /// Gets or sets a list of packet.
         /// </summary>
         /// <value>Array of packets.</value>
-        public Handshake Protocol { get; set; }
+        public IProtocol Protocol { get; }
     }
 }

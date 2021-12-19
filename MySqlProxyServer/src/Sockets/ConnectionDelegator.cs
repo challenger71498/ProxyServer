@@ -1,26 +1,44 @@
 // Copyright (c) Min. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
+using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
     public class ConnectionDelegator : IConnectionDelegator
     {
         private readonly ISocketConnection counterConnection;
-        private readonly MessageSender sender;
-        private readonly MessageReceiver receiver;
+        private readonly ProtocolSender sender;
+        private readonly ProtocolReceiver receiver;
+
+        private readonly List<IData> dataList;
+        private readonly IObservable<IData> protocolSendStream;
 
         public ConnectionDelegator(
             ISocketConnection counterConnection,
-            MessageSender sender,
-            MessageReceiver receiver)
+            ProtocolSender sender,
+            ProtocolReceiver receiver)
         {
             this.counterConnection = counterConnection;
             this.sender = sender;
             this.receiver = receiver;
 
-            this.WhenMessageCreated = this.sender.GetMessageStream(this.counterConnection.WhenDataReceived);
+            var protocolReceivedStream = this.sender.GetProtocolStream(this.counterConnection.WhenDataReceived);
+
+            protocolReceivedStream.Subscribe(data =>
+            {
+                if (sendBack)
+                {
+                    this.protocolSendStream.Append(newData);
+                    return;
+                }
+
+                // Send a message?
+                messageSendStream.Append(message);
+            });
+
             this.counterConnection.WhenDisconnected.Subscribe(this.OnDisconnected);
         }
 
@@ -30,8 +48,26 @@ namespace Min.MySqlProxyServer.Sockets
         /// <inheritdoc/>
         public void SetMessageReceiveStream(IObservable<ISocketControllerMessage> messageReceiveStream)
         {
+            var protocolStream = messageReceiveStream.Select<ISocketControllerMessage, IData>(message =>
+            {
+                if (message is RawDataMessage rawDataMessage)
+                {
+                    return new BinaryData(rawDataMessage.Raw);
+                }
+
+                if (message is IProtocolMessage protocolMessage)
+                {
+                    // Do something...
+                    return protocolMessage.Protocol;
+                }
+
+                throw new Exception("This should not be happened. Message is not RawDataMessage or IProtocolMessage.");
+            });
+
+
+
             // TODO: Life cycle management needed.
-            var dataStream = this.receiver.GetDataStream(messageReceiveStream);
+            var dataStream = this.receiver.GetDataStream(this.protocolSendStream);
             dataStream.Subscribe(this.OnDataReceived);
         }
 

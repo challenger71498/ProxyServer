@@ -2,10 +2,15 @@ using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
-    public class AuthSwitchResponseMessage : ISocketControllerMessage
+    public class AuthSwitchResponseMessage : IProtocolMessage
     {
+        public AuthSwitchResponseMessage(AuthSwitchResponse authSwitchResponse)
+        {
+            this.Protocol = authSwitchResponse;
+        }
+
         public SocketControllerMessageType Type => SocketControllerMessageType.AUTH_SWITCH_RESPONSE;
 
-        public AuthSwitchResponse Protocol { get; set; }
+        public IProtocol Protocol { get; }
     }
 }

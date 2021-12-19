@@ -6,33 +6,35 @@ namespace Min.MySqlProxyServer
 {
     public class Controller
     {
-        private readonly IObservable<IData> protocolStreamFromCounterDelegator;
-        private readonly IObservable<byte[]> dataStreamFromCounter;
-        private readonly IObservable<ISocketControllerMessage> messageStreamToCounterDelegator;
-        private readonly IObservable<IBinaryData> dataStreamToCounter;
+        private readonly ProtocolSender sender;
+        private readonly ProtocolReceiver receiver;
 
         public Controller(
-            IObservable<ISocketControllerMessage> messageStreamFromCounterDelegator,
-            IObservable<byte[]> dataStreamFromCounter,
-            IObservable<ISocketControllerMessage> messageStreamToCounterDelegator,
-            IObservable<IBinaryData> dataStreamToCounter
-        )
+            ProtocolSenderFactory senderFactory,
+            ProtocolReceiverFactory receiverFactory)
         {
-            this.messageStreamFromCounterDelegator = messageStreamFromCounterDelegator;
-            this.dataStreamFromCounter = dataStreamFromCounter;
-            this.messageStreamToCounterDelegator = messageStreamToCounterDelegator;
-            this.dataStreamToCounter = dataStreamToCounter;
+            this.sender = senderFactory.Create();
+            this.receiver = receiverFactory.Create();
         }
 
-        public void OnMessageFromCounterDelegatorReceived(ISocketControllerMessage message)
+        public void SetMessageStream(IObservable<ISocketControllerMessage> messageStream)
         {
-            // blah blah blah...
-            var receiver = new MessageReceiver();
+            var protocolStream = messageStream.Select<ISocketControllerMessage, IData>(message =>
+            {
+                if (message is RawDataMessage rawDataMessage)
+                {
+                    return new BinaryData(rawDataMessage.Raw);
+                }
 
-            receiver.GetDataStream();
+                if (message is IProtocolMessage protocolMessage)
+                {
+                    return protocolMessage.Protocol;
+                }
 
-            // Send to data stream.
-            dataStreamFromCounter.Append()
+                throw new Exception("This should not be happened. Message is not RawDataMessage or IProtocolMessage.");
+            });
+
+            this.receiver.GetDataStream(protocolStream);
         }
     }
 }
