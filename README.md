@@ -36,10 +36,10 @@ Log files are located at `MySqlProxyServer/bin/Debug/net5.0/logs`.
 
 # Limitations
 
-- Currently only `mysql_native_password` authentication is supported.
+-   Currently only `mysql_native_password` authentication is supported.
 
-- Graceful exit on socket is not implemented.
+-   Graceful exit on socket is not implemented.
 
 # Known Issues
 
-- [ ] Socket is not released when socket connection finishes.
+-   [v] Socket is not released when socket connection finishes.
