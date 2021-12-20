@@ -1,6 +1,8 @@
 using System;
 using System.Net.Sockets;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Min.MySqlProxyServer.Sockets
@@ -15,6 +17,7 @@ namespace Min.MySqlProxyServer.Sockets
         private const int SocketKeepAliveRetryCount = 1;
 
         private readonly Socket socket;
+        private readonly CancellationTokenSource socketCancellationTokenSource = new();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SocketConnection"/> class.
@@ -30,11 +33,6 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.WhenDisconnected = this.GetDisconnectedStream();
             this.WhenDataReceived = this.GetDataStream();
-
-            this.WhenDisconnected.Subscribe(_ =>
-            {
-                // this.Disconnect();
-            });
         }
 
         /// <inheritdoc [cref="ISocketConnection"] />
@@ -78,6 +76,7 @@ namespace Min.MySqlProxyServer.Sockets
             this.Connected = false;
 
             // TODO: Close socket gracefully.
+            this.socketCancellationTokenSource.Cancel();
             this.socket.Shutdown(SocketShutdown.Receive);
             this.socket.Close();
         }
@@ -93,20 +92,26 @@ namespace Min.MySqlProxyServer.Sockets
         private IObservable<bool> GetDisconnectedStream()
         {
             // TODO: Emit stream only once.
+            var subject = new Subject<bool>();
+
             var disconnectedStream = Observable.Interval(TimeSpan.FromMilliseconds(1000))
                 .TakeWhile(_ => this.Connected)
                 .Select((_) =>
                 {
                     var polled = this.socket.Poll(1000, SelectMode.SelectRead);
-                    var available = this.socket.Available == 0;
+                    var zero = this.socket.Available == 0;
                     var connected = this.socket.Connected;
 
-                    return (polled && available) || !connected;
+                    return (polled && zero) || !connected;
                 })
                 .Where(disconnected => disconnected)
-                .Do(_ => this.Connected = false);
+                .Multicast(subject);
 
-            return disconnectedStream;
+            subject.Subscribe(_ => this.Disconnect());
+
+            disconnectedStream.Connect();
+
+            return subject;
         }
 
         private IObservable<byte[]> GetDataStream()
