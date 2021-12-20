@@ -41,19 +41,8 @@ namespace Min.MySqlProxyServer
                     var packetStream = data
                         .Select(data => (IPacketData)data);
 
+                    // TODO: Add packet Buffering.
                     return packetStream.Select(this.GetPayload);
-                    // .Do(payload => Console.WriteLine($"{Convert.ToHexString(payload.Payload)}"))
-                    // .Do(payload => Console.WriteLine($"{System.Text.Encoding.ASCII.GetString(payload.Payload)}"));
-                    // TODO: Fix buffering.
-                    // .Buffer(packetStream.Where(_ => false))
-                    // .Do(packets =>
-                    // {
-                    //     foreach (var packet in packets)
-                    //     {
-                    //         Console.WriteLine($"GOT: {Convert.ToHexString(packet.Payload)}");
-                    //     }
-                    // })
-                    // .SelectMany(a => a);;
                 });
         }
 
@@ -122,39 +111,3 @@ namespace Min.MySqlProxyServer
         }
     }
 }
-
-// var payloadData = dataStream
-//     .Where(data => data.GetType() == typeof(IPayloadData))
-//     .Select(data => (IPayloadData)data)
-//     .Select<IPayloadData, IData>(payloadData =>
-//     {
-//         foreach (var factory in this.factories)
-//         {
-//             if (factory.TryCreate(payloadData.Payload, out var protocol))
-//             {
-//                 return protocol;
-//             }
-//         }
-
-//         return payloadData;
-//     });
-
-// var failedData = payloadData
-//     .Where(payload => payload.GetType() == typeof(IPayloadData))
-//     .Let(this.packetService.ToRawData);
-
-// return Observable.Merge(rawStream, payloadData);
-
-// return dataStream.Let<IData, IData>(data =>
-// {
-//     // Filter only IPayloadData.
-//     var rawData = data.Where(data => data.GetType() != typeof(IPayloadData));
-
-//     var payloadData = data.Select(data => (IPayloadData)data);
-
-
-
-//     // If failed, rollback to raw binary data.
-//     var packets = this.GetPackets(payloadData.InitialSequenceId, payloadData.Payload);
-//     var binaries = packets.Select(packet => ?);
-// });

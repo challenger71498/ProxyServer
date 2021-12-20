@@ -49,12 +49,12 @@ namespace Min.MySqlProxyServer.Sockets
         /// <inheritdoc [cref="ISocketConnection"] />
         public async Task Send(byte[] binary)
         {
-            Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
-            Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
+            // Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
+            // Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
 
             // Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary[..Math.Min(200, binary.Length)])}");
             // Console.WriteLine($"Sending: {Convert.ToHexString(binary[..Math.Min(200, binary.Length)])}");
-            Console.WriteLine($"LEN: {binary.Length}");
+            // Console.WriteLine($"LEN: {binary.Length}");
 
             if (!this.Connected)
             {
@@ -115,20 +115,18 @@ namespace Min.MySqlProxyServer.Sockets
 
             // TODO: Handle stream on disconnected.
             var dataStream = Observable
-                .FromAsync(() => this.socket.ReceiveAsync(buffer, SocketFlags.None))
+                .FromAsync(async () =>
+                {
+                    if (this.socketCancellationTokenSource.IsCancellationRequested)
+                    {
+                        return await new Task<int>(() => -1);
+                    }
+
+                    return await this.socket.ReceiveAsync(buffer, SocketFlags.None, this.socketCancellationTokenSource.Token);
+                })
                 .Where(received => received != 0)
                 .Select(received => buffer[..received])
-                .Do(data => Console.WriteLine(Convert.ToHexString(data)));
-            // .Aggregate((prev, current) =>
-            // {
-            //     var sum = new byte[prev.Length + current.Length];
-            //     prev.CopyTo(sum, 0);
-            //     current.CopyTo(sum, prev.Length);
-
-            //     return sum;
-            // });
-
-            dataStream.Catch<byte[], Exception>(this.OnDataStreamError);
+                .Catch<byte[], Exception>(this.OnDataStreamError);
 
             return dataStream;
         }
@@ -136,6 +134,8 @@ namespace Min.MySqlProxyServer.Sockets
         private IObservable<byte[]> OnDataStreamError(Exception e)
         {
             // TODO: Exception handling
+            Console.WriteLine(e.Message);
+
             return Observable.Empty<byte[]>();
         }
     }

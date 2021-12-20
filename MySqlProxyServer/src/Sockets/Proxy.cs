@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -59,9 +58,6 @@ namespace Min.MySqlProxyServer.Sockets
 
             clientDataStream.Subscribe(data => this.toServerDataSubject.OnNext(data));
             serverDataStream.Subscribe(data => this.toClientDataSubject.OnNext(data));
-
-            this.toClientDataSubject.Subscribe(_ => Console.WriteLine("To client data subject has been notified!"), (e) => Console.WriteLine(e.Message));
-            this.toServerDataSubject.Subscribe(_ => Console.WriteLine("To server data subject has been notified!"), (e) => Console.WriteLine(e.Message));
         }
 
         private IData OnDataCreated(IData data)
@@ -96,15 +92,11 @@ namespace Min.MySqlProxyServer.Sockets
 
             var payload = protocol.ToPayloads();
 
-            Console.WriteLine($"LAST_ID {this.lastPayloadSequenceId}");
-
             return new PayloadData(this.lastPayloadSequenceId ?? 0, payload);
         }
 
         private IData? OnClientProtocolCreated(IData data)
         {
-            Console.WriteLine($"Client received data type of {data.GetType()}");
-
             if (data is QueryResponse queryResponse)
             {
                 var len = queryResponse.ColumnCount;
@@ -126,8 +118,6 @@ namespace Min.MySqlProxyServer.Sockets
 
         private IData? OnServerProtocolCreated(IData data)
         {
-            Console.WriteLine($"Server received data type of {data.GetType()}");
-
             if (data is HandshakeResponse handshakeResponse)
             {
                 this.state.Capability = handshakeResponse.Capability;

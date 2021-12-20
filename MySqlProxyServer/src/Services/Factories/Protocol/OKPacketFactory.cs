@@ -22,8 +22,6 @@ namespace Min.MySqlProxyServer
 
             var payload = payloadData.Payloads.First();
 
-            Console.WriteLine(Convert.ToHexString(payload));
-
             using var stream = new MemoryStream(payload);
             using var reader = new BinaryReader(stream);
 
