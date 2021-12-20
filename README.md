@@ -14,8 +14,18 @@ docker run --rm --network host --name mysql -e MYSQL_ROOT_PASSWORD=foobar mysql:
 
 # Start
 
+## Server
+
 ```
 dotnet run --project MySqlProxyServer
+```
+
+## Client
+
+### Mysql Console
+
+```
+mysql --ssl-mode=DISABLED --default-auth=mysql_native_password --host=127.0.0.1 --port=8080 --user=<any username> --password=<any password>
 ```
 
 ## Logging
