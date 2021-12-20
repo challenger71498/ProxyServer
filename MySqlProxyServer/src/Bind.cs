@@ -30,7 +30,7 @@ namespace Min.MySqlProxyServer
             container.RegisterSingleton<ProxyFactory>();
             container.RegisterSingleton<ServerFactory>();
 
-            // container.Verify();
+            container.Verify();
 
             return container;
         }
