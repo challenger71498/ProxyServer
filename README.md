@@ -1,3 +1,5 @@
+# ProxyServer
+
 A proxy server for MySQL.
 
 # Prerequisites
@@ -40,4 +42,4 @@ Log files are located at `MySqlProxyServer/bin/Debug/net5.0/logs`.
 
 # Known Issues
 
-- [ ] Critical memory leak issue when socket connection finishes.
+- [ ] Socket is not released when socket connection finishes.
