@@ -2,15 +2,27 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Min.MySqlProxyServer.Protocol;
+using Min.MySqlProxyServer.Sockets;
 
 namespace Min.MySqlProxyServer
 {
     public class QueryCommandFactory : BaseProtocolFactory
     {
-        protected override IProtocol Read(BinaryReader reader)
+        protected override IProtocol Read(IPayloadData payloadData, ProxyState state)
         {
-            var queryCommand = default(QueryCommand);
+            if (payloadData.Payloads.Count() != 1)
+            {
+                throw new Exception("Payload count should be 1.");
+            }
+
+            var payload = payloadData.Payloads.First();
+
+            using var stream = new MemoryStream(payload);
+            using var reader = new BinaryReader(stream);
+
+            var queryCommand = new QueryCommand();
 
             var code = reader.ReadByte();
 
@@ -20,6 +32,11 @@ namespace Min.MySqlProxyServer
             }
 
             queryCommand.Query = reader.ReadRestOfPacketString();
+
+            if (stream.Position != stream.Length)
+            {
+                throw new Exception($"Reader {this.GetType()} did not reach EOF. {stream.Position} {stream.Length}");
+            }
 
             return queryCommand;
         }

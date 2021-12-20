@@ -1,7 +1,9 @@
+using System.Collections.Generic;
+
 namespace Min.MySqlProxyServer.Protocol
 {
     public interface IWritableProtocol : IProtocol
     {
-        byte[] ToPayload();
+        IEnumerable<byte[]> ToPayloads();
     }
 }

@@ -14,7 +14,7 @@ namespace Min.MySqlProxyServer.Protocol
             new AuthSwitchResponseFactory(),
         };
 
-        public byte[] ToPayload()
+        public IEnumerable<byte[]> ToPayloads()
         {
             var stream = new MemoryStream();
             var writer = new BinaryWriter(stream);
@@ -27,7 +27,7 @@ namespace Min.MySqlProxyServer.Protocol
             var buffer = stream.GetBuffer();
             var binary = buffer[..(int)stream.Length];
 
-            return binary;
+            return new List<byte[]> { binary };
         }
     }
 }

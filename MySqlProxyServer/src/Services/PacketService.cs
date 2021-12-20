@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reactive.Linq;
 using Min.MySqlProxyServer.Protocol;
 
@@ -26,12 +27,12 @@ namespace Min.MySqlProxyServer
                     return binaryData;
                 }
 
-                if (data is not IPacket packet)
+                if (data is not IPacketData packetData)
                 {
                     throw new FormatException($"Data format {data.GetType()} must be IPacket or IBinaryData.");
                 }
 
-                return packet.ToBinary();
+                return packetData.ToBinary();
             });
         }
 
@@ -39,13 +40,14 @@ namespace Min.MySqlProxyServer
         {
             return binaryStream.Select<IBinaryData, IData>(binary =>
             {
-                if (!this.packetFactory.IsPacket(binary.Raw))
+                var packets = this.packetFactory.TryCreate(binary.Raw);
+
+                if (packets == null)
                 {
                     return binary;
                 }
 
-                var packet = this.packetFactory.Create(binary.Raw);
-                return packet;
+                return new PacketData(packets);
             });
         }
     }

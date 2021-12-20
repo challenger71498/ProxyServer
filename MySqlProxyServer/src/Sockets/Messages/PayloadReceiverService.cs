@@ -24,12 +24,6 @@ namespace Min.MySqlProxyServer.Sockets
             var dataStream = payloadStream
                 .Let(this.payloadService.ToPacket)
                 .Let(this.packetService.ToBinaryData)
-                .Catch((Exception e) =>
-                {
-                    Console.Error.WriteLine($"Error on streaming message to data: {e.GetType()} {e.Message}");
-                    Console.Error.WriteLine(e.StackTrace);
-                    return Observable.Empty<IBinaryData>();
-                })
                 .Repeat();
 
             return dataStream;

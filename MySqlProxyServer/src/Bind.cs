@@ -12,22 +12,16 @@ namespace Min.MySqlProxyServer
             var container = new Container();
 
             // default factories
-            container.Collection.Register<IProtocolFactory>(typeof(HandShakeResponseFactory), typeof(AuthSwitchRequestFactory), typeof(QueryCommandFactory));
+            container.Collection.Register<IProtocolFactory>(typeof(HandShakeResponseFactory), typeof(QueryCommandFactory));
 
             container.RegisterSingleton<IPacketService, PacketService>();
             container.RegisterSingleton<IPayloadService, PayloadService>();
-            container.RegisterSingleton<Sockets.ProtocolService>();
-            // container.RegisterSingleton<IMessageService, MessageService>();
+            container.RegisterSingleton<ProtocolService>();
             container.RegisterSingleton<AuthService>();
+            container.RegisterSingleton<LoggerService>();
 
             container.RegisterSingleton<PayloadSenderService>();
             container.RegisterSingleton<PayloadReceiverService>();
-
-            // container.RegisterSingleton<ClientMessageSenderFactory>();
-            // container.RegisterSingleton<ClientMessageReceiverFactory>();
-
-            // container.RegisterSingleton<ServerMessageSenderFactory>();
-            // container.RegisterSingleton<ServerMessageReceiverFactory>();
 
             container.RegisterSingleton<PacketFactory>();
 

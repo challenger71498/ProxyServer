@@ -10,21 +10,27 @@ namespace Min.MySqlProxyServer
     {
         public IObservable<IData> ToPacket(IObservable<IData> dataStream)
         {
-            return dataStream.SelectMany<IData, IData>((data) =>
+            return dataStream.Select((data) =>
             {
                 if (data is not IPayloadData payloadData)
                 {
-                    return new[] { data };
+                    return data;
                 }
 
-                return this.GetPackets(payloadData.InitialSequenceId, payloadData.Payload);
+                // Console.WriteLine(Convert.ToHexString(payloadData.Payloads.ElementAt(0)));
+
+                var packetData = this.GetPackets(payloadData);
+
+                // Console.WriteLine(Convert.ToHexString(packetData.Packets.ElementAt(0).Payload));
+
+                return packetData;
             });
         }
 
         public IObservable<IData> FromPacket(IObservable<IData> dataStream)
         {
             return dataStream
-                .GroupBy(data => data is IPacket)
+                .GroupBy(data => data is PacketData)
                 .SelectMany(data =>
                 {
                     if (!data.Key)
@@ -33,50 +39,69 @@ namespace Min.MySqlProxyServer
                     }
 
                     var packetStream = data
-                        .Select(data => (IPacket)data);
+                        .Select(data => (IPacketData)data);
 
-                    return packetStream
-                        .Buffer(packetStream.Where(this.IsPacketEOF))
-                        .Select(this.GetPayload)
-                        .Do(data => Console.WriteLine(data.InitialSequenceId));
+                    return packetStream.Select(this.GetPayload);
+                    // .Do(payload => Console.WriteLine($"{Convert.ToHexString(payload.Payload)}"))
+                    // .Do(payload => Console.WriteLine($"{System.Text.Encoding.ASCII.GetString(payload.Payload)}"));
+                    // TODO: Fix buffering.
+                    // .Buffer(packetStream.Where(_ => false))
+                    // .Do(packets =>
+                    // {
+                    //     foreach (var packet in packets)
+                    //     {
+                    //         Console.WriteLine($"GOT: {Convert.ToHexString(packet.Payload)}");
+                    //     }
+                    // })
+                    // .SelectMany(a => a);;
                 });
         }
 
-        private IEnumerable<IPacket> GetPackets(int id, byte[] payload)
+        private IPacketData GetPackets(IPayloadData payloadData)
         {
-            var output = new List<IPacket>();
-            var buffer = payload;
+            var packets = new List<IPacket>();
+            var id = payloadData.InitialSequenceId;
 
-            while (buffer.Length >= 2E24 - 1)
+            foreach (var payload in payloadData.Payloads)
             {
+                var buffer = payload;
+
+                while (buffer.Length >= 2E24 - 1)
+                {
+                    var length = (1024 * 1024 * 16) - 1;
+
+                    var split = payload[..length];
+                    buffer = payload[(length + 1)..];
+
+                    var packet = new Packet(split.Length, id, split);
+
+                    id += 1;
+                    packets.Add(packet);
+                }
+
+                var last = new Packet(buffer.Length, id, buffer);
+                packets.Add(last);
                 id += 1;
-
-                var length = (1024 * 1024 * 16) - 1;
-
-                var split = payload[..length];
-                buffer = payload[(length + 1)..];
-
-                var packet = new Packet(split.Length, id, split);
-                output.Add(packet);
             }
 
-            var last = new Packet(buffer.Length, id, buffer);
-            output.Add(last);
-
-            return output;
+            return new PacketData(packets);
         }
 
-        private bool IsPacketEOF(IPacket packet)
+        private bool IsPacketNotEOF(IPacket packet)
         {
-            return packet.PayloadLength == 0xffffff;
+            Console.Write("On IsPacketNotEOF: ");
+            // Console.WriteLine(Convert.ToHexString(packet.Payload));
+
+            return packet.PayloadLength != 0xffffff;
         }
 
-        private IPayloadData GetPayload(IList<IPacket> packets)
+        private IPayloadData GetPayload(IPacketData packetData)
         {
+            var payloads = new List<byte[]>();
             var buffer = new List<byte>();
             int id = -1;
 
-            foreach (var packet in packets)
+            foreach (var packet in packetData.Packets)
             {
                 if (id == -1)
                 {
@@ -84,11 +109,15 @@ namespace Min.MySqlProxyServer
                 }
 
                 buffer.AddRange(packet.Payload);
+
+                if (packet.PayloadLength != 0xffffff)
+                {
+                    payloads.Add(buffer.ToArray());
+                    buffer.Clear();
+                }
             }
 
-            var payload = buffer.ToArray();
-
-            var payloadData = new PayloadData(id, payload);
+            var payloadData = new PayloadData(id, payloads);
             return payloadData;
         }
     }

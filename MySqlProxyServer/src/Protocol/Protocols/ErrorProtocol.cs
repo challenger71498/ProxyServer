@@ -15,7 +15,7 @@ namespace Min.MySqlProxyServer.Protocol
 
         public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
 
-        public byte[] ToPayload()
+        public IEnumerable<byte[]> ToPayloads()
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -35,7 +35,7 @@ namespace Min.MySqlProxyServer.Protocol
             var buffer = stream.GetBuffer();
             var binary = buffer[..(int)stream.Length];
 
-            return binary;
+            return new List<byte[]> { binary };
         }
     }
 }

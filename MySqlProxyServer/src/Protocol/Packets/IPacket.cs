@@ -5,7 +5,7 @@ namespace Min.MySqlProxyServer.Protocol
     /// <summary>
     /// <see cref="IPacket"/> is an interface for MySQL base packet.
     /// </summary>
-    public interface IPacket : IData
+    public interface IPacket
     {
         /// <summary>
         /// Gets or sets the length of the payload binary.

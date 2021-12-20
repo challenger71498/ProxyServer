@@ -3,28 +3,17 @@
 using System;
 using System.IO;
 using Min.MySqlProxyServer.Protocol;
+using Min.MySqlProxyServer.Sockets;
 
 namespace Min.MySqlProxyServer
 {
     public abstract class BaseProtocolFactory : IProtocolFactory
     {
-        public bool TryCreate(byte[] data, out IProtocol protocol)
+        public bool TryCreate(IPayloadData payloadData, out IProtocol protocol, ProxyState state)
         {
-            var stream = new MemoryStream(data);
-            var reader = new BinaryReader(stream);
-
             try
             {
-                Console.WriteLine(Convert.ToHexString(data));
-                Console.WriteLine(System.Text.Encoding.UTF8.GetString(data));
-
-                protocol = Read(reader);
-
-                if (stream.Position != stream.Length)
-                {
-                    throw new Exception($"Reader {this.GetType()} did not reach EOF. {stream.Position} {stream.Length}");
-                }
-
+                protocol = Read(payloadData, state);
                 return true;
             }
             catch (Exception e)
@@ -38,6 +27,6 @@ namespace Min.MySqlProxyServer
             }
         }
 
-        protected abstract IProtocol Read(BinaryReader reader);
+        protected abstract IProtocol Read(IPayloadData payloadData, ProxyState state);
     }
 }

@@ -2,41 +2,66 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using Min.MySqlProxyServer.Protocol;
 
 namespace Min.MySqlProxyServer.Sockets
 {
+    public struct ProxyState
+    {
+        public CapabilityFlag? Capability { get; set; }
+    }
+
     public class Proxy
     {
         private readonly IConnectionDelegator client;
         private readonly IConnectionDelegator server;
         private readonly ProtocolService protocolService;
         private readonly AuthService authService;
+        private readonly LoggerService loggerService;
 
-        private IData lastData;
-        private int lastPayloadSequenceId;
+        private readonly Subject<IData> toServerDataSubject = new();
+        private readonly Subject<IData> toClientDataSubject = new();
+
+        private ProxyState state;
+        private IData? lastData = null;
+        private int? lastPayloadSequenceId = null;
 
         public Proxy(
             IConnectionDelegator client,
             IConnectionDelegator server,
             ProtocolService protocolService,
-            AuthService authService)
+            AuthService authService,
+            LoggerService loggerService)
         {
             this.client = client;
             this.server = server;
 
             this.authService = authService;
             this.protocolService = protocolService;
+            this.loggerService = loggerService;
 
-            var clientProtocolStream = this.client.WhenDataCreated.Select(this.OnDataCreated);
-            var serverProtocolStream = this.server.WhenDataCreated.Select(this.OnDataCreated);
+            var clientDataStream = this.client.WhenDataCreated
+                .Select(this.OnDataCreated)
+                .Select(this.OnClientProtocolCreated)
+                .Where(data => data != null)
+                .Repeat();
 
-            var clientDataStream = clientProtocolStream.Select(this.OnClientProtocolCreated);
-            var serverDataStream = serverProtocolStream.Select(this.OnServerProtocolCreated);
+            var serverDataStream = this.server.WhenDataCreated
+                .Select(this.OnDataCreated)
+                .Select(this.OnServerProtocolCreated)
+                .Where(data => data != null)
+                .Repeat();
 
-            this.server.SetDataReceiveStream(clientDataStream.Select(this.OnProtocolReceived));
-            this.client.SetDataReceiveStream(serverDataStream.Select(this.OnProtocolReceived));
+            this.server.SetDataReceiveStream(this.toServerDataSubject.Select(this.OnProtocolReceived));
+            this.client.SetDataReceiveStream(this.toClientDataSubject.Select(this.OnProtocolReceived));
+
+            clientDataStream.Subscribe(data => this.toServerDataSubject.OnNext(data));
+            serverDataStream.Subscribe(data => this.toClientDataSubject.OnNext(data));
+
+            this.toClientDataSubject.Subscribe(_ => Console.WriteLine("To client data subject has been notified!"), (e) => Console.WriteLine(e.Message));
+            this.toServerDataSubject.Subscribe(_ => Console.WriteLine("To server data subject has been notified!"), (e) => Console.WriteLine(e.Message));
         }
 
         private IData OnDataCreated(IData data)
@@ -48,11 +73,12 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.lastPayloadSequenceId = payload.InitialSequenceId;
 
+            // Console.WriteLine($"{data.GetType()} is getting available factories from {this.lastData?.GetType()}");
             var factories = this.protocolService.GetAvailableFactories(this.lastData);
 
             foreach (var factory in factories)
             {
-                if (factory.TryCreate(payload.Payload, out var protocol))
+                if (factory.TryCreate(payload, out var protocol, this.state))
                 {
                     return protocol;
                 }
@@ -68,26 +94,48 @@ namespace Min.MySqlProxyServer.Sockets
                 return data;
             }
 
-            var payload = protocol.ToPayload();
+            var payload = protocol.ToPayloads();
 
-            Console.WriteLine(Convert.ToHexString(payload));
+            Console.WriteLine($"LAST_ID {this.lastPayloadSequenceId}");
 
-            return new PayloadData(this.lastPayloadSequenceId, payload);
+            return new PayloadData(this.lastPayloadSequenceId ?? 0, payload);
         }
 
-        private IData OnClientProtocolCreated(IData data)
+        private IData? OnClientProtocolCreated(IData data)
         {
+            Console.WriteLine($"Client received data type of {data.GetType()}");
+
+            if (data is QueryResponse queryResponse)
+            {
+                var len = queryResponse.ColumnCount;
+                var random = new Random();
+
+                var mask = random.Next(0, len);
+
+                queryResponse.Columns.ElementAt(mask).Type = 0xfe;
+
+                foreach (var row in queryResponse.Rows)
+                {
+                    row[mask] = Encoding.ASCII.GetBytes("***");
+                }
+            }
+
             this.lastData = data;
             return data;
         }
 
-        private IData OnServerProtocolCreated(IData data)
+        private IData? OnServerProtocolCreated(IData data)
         {
+            Console.WriteLine($"Server received data type of {data.GetType()}");
+
             if (data is HandshakeResponse handshakeResponse)
             {
+                this.state.Capability = handshakeResponse.Capability;
+
                 var root = Encoding.ASCII.GetBytes("root");
                 handshakeResponse.Username = root;
 
+                this.lastData = data;
                 return handshakeResponse;
             }
 
@@ -99,26 +147,44 @@ namespace Min.MySqlProxyServer.Sockets
                 }
 
                 var nonce = lastAuthRequest.AuthPluginData[..^1];
-
-                Console.WriteLine($"NONCE:{Convert.ToHexString(nonce)}");
-
-                Console.WriteLine($"FROM: {Convert.ToHexString(authSwitchResponse.AuthPluginResponse)}");
-
                 var foobar = Encoding.ASCII.GetBytes("foobar");
 
                 var authData = this.authService.GetAuthData(Encryption.HashAlgorithmType.SHA1, foobar, nonce);
 
-                Console.WriteLine($"TO  : {Convert.ToHexString(authData)}");
-
                 authSwitchResponse.AuthPluginResponse = authData;
+
+                this.lastData = data;
                 return authSwitchResponse;
+            }
+
+            if (data is QueryCommand queryCommand)
+            {
+                var queryString = Encoding.ASCII.GetString(queryCommand.Query);
+
+                this.loggerService.Log(queryString);
+
+                if (queryString.Contains("CHEQUER"))
+                {
+                    Console.WriteLine("Nope.");
+
+                    var error = new ErrorProtocol()
+                    {
+                        ErrorCode = 0,
+                        ErrorMessage = Encoding.ASCII.GetBytes("No permission to access the CHEQUER"),
+                    };
+
+                    this.lastPayloadSequenceId++;
+                    this.toServerDataSubject.OnNext(error);
+                    return null;
+                }
+
+                this.lastData = data;
+                return data;
             }
 
             this.lastData = data;
             return data;
         }
-
-
 
         private void OnClientDisconnected(object? sender, EventArgs e)
         {

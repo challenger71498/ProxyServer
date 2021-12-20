@@ -49,8 +49,12 @@ namespace Min.MySqlProxyServer.Sockets
         /// <inheritdoc [cref="ISocketConnection"] />
         public async Task Send(byte[] binary)
         {
-            // Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
-            // Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
+            Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary)}");
+            Console.WriteLine($"Sending: {Convert.ToHexString(binary)}");
+
+            // Console.WriteLine($"Sending: {System.Text.Encoding.ASCII.GetString(binary[..Math.Min(200, binary.Length)])}");
+            // Console.WriteLine($"Sending: {Convert.ToHexString(binary[..Math.Min(200, binary.Length)])}");
+            Console.WriteLine($"LEN: {binary.Length}");
 
             if (!this.Connected)
             {
@@ -113,7 +117,16 @@ namespace Min.MySqlProxyServer.Sockets
             var dataStream = Observable
                 .FromAsync(() => this.socket.ReceiveAsync(buffer, SocketFlags.None))
                 .Where(received => received != 0)
-                .Select(received => buffer[..received]);
+                .Select(received => buffer[..received])
+                .Do(data => Console.WriteLine(Convert.ToHexString(data)));
+            // .Aggregate((prev, current) =>
+            // {
+            //     var sum = new byte[prev.Length + current.Length];
+            //     prev.CopyTo(sum, 0);
+            //     current.CopyTo(sum, prev.Length);
+
+            //     return sum;
+            // });
 
             dataStream.Catch<byte[], Exception>(this.OnDataStreamError);
 

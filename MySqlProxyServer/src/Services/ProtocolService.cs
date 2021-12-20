@@ -1,94 +1,94 @@
-using System;
-using System.Collections.Generic;
-using System.Reactive.Linq;
-using Min.MySqlProxyServer.Protocol;
-using Min.MySqlProxyServer.Sockets;
+// using System;
+// using System.Collections.Generic;
+// using System.Reactive.Linq;
+// using Min.MySqlProxyServer.Protocol;
+// using Min.MySqlProxyServer.Sockets;
 
-namespace Min.MySqlProxyServer
-{
-    public class ProtocolService : IProtocolService
-    {
-        private readonly IPacketService packetService;
-        private readonly IPayloadService payloadService;
-        private readonly IEnumerable<IProtocolFactory> factories;
+// namespace Min.MySqlProxyServer
+// {
+//     public class ProtocolService : IProtocolService
+//     {
+//         private readonly IPacketService packetService;
+//         private readonly IPayloadService payloadService;
+//         private readonly IEnumerable<IProtocolFactory> factories;
 
-        public ProtocolService(
-            IPacketService packetService,
-            IPayloadService payloadService,
-            IEnumerable<IProtocolFactory> factories)
-        {
-            this.packetService = packetService;
-            this.payloadService = payloadService;
+//         public ProtocolService(
+//             IPacketService packetService,
+//             IPayloadService payloadService,
+//             IEnumerable<IProtocolFactory> factories)
+//         {
+//             this.packetService = packetService;
+//             this.payloadService = payloadService;
 
-            this.factories = factories;
-        }
+//             this.factories = factories;
+//         }
 
-        public IObservable<IData> ToPayload(int initialSequenceId, IObservable<IData> dataStream)
-        {
-            return dataStream.Select(data =>
-            {
-                if (data is not IWritableProtocol protocol)
-                {
-                    return data;
-                }
+//         public IObservable<IData> ToPayload(int initialSequenceId, IObservable<IData> dataStream)
+//         {
+//             return dataStream.Select(data =>
+//             {
+//                 if (data is not IWritableProtocol protocol)
+//                 {
+//                     return data;
+//                 }
 
-                var payload = protocol.ToPayload();
+//                 var payload = protocol.ToPayload();
 
-                return new PayloadData(initialSequenceId, payload);
-            });
-        }
+//                 return new PayloadData(initialSequenceId, payload);
+//             });
+//         }
 
-        public IObservable<IData> FromPayload(IObservable<IData> dataStream)
-        {
-            return dataStream
-                .GroupBy(data => data is IPayloadData)
-                .SelectMany(stream =>
-                {
-                    // If not IPayloadData, skip.
-                    if (!stream.Key)
-                    {
-                        return stream;
-                    }
+//         public IObservable<IData> FromPayload(IObservable<IData> dataStream)
+//         {
+//             return dataStream
+//                 .GroupBy(data => data is IPayloadData)
+//                 .SelectMany(stream =>
+//                 {
+//                     // If not IPayloadData, skip.
+//                     if (!stream.Key)
+//                     {
+//                         return stream;
+//                     }
 
-                    // If IPayloadData, try convert to IProtocol.
-                    return stream
-                        .Select(data => (IPayloadData)data)
-                        .Let(this.TryConvertToProtocol);
-                });
-        }
+//                     // If IPayloadData, try convert to IProtocol.
+//                     return stream
+//                         .Select(data => (IPayloadData)data)
+//                         .Let(this.TryConvertToProtocol);
+//                 });
+//         }
 
-        private IObservable<IData> TryConvertToProtocol(IObservable<IPayloadData> stream)
-        {
-            var protocolStream = stream
-                .Select<IPayloadData, IData>(payloadData =>
-                {
-                    // Try create protocol by factories.
-                    foreach (var factory in this.factories)
-                    {
-                        if (factory.TryCreate(payloadData.Payload, out var protocol))
-                        {
-                            return protocol;
-                        }
-                    }
+//         private IObservable<IData> TryConvertToProtocol(IObservable<IPayloadData> stream)
+//         {
+//             var protocolStream = stream
+//                 .Select<IPayloadData, IData>(payloadData =>
+//                 {
+//                     // Try create protocol by factories.
+//                     foreach (var factory in this.factories)
+//                     {
+//                         if (factory.TryCreate(payloadData.Payloads, out var protocol))
+//                         {
+//                             return protocol;
+//                         }
+//                     }
 
-                    // If failed, stream it as-is.
-                    return payloadData;
-                });
+//                     // If failed, stream it as-is.
+//                     return payloadData;
+//                 });
 
-            return protocolStream
-                .GroupBy(data => data is IPayloadData)
-                .SelectMany<IGroupedObservable<bool, IData>, IData>(data =>
-                {
-                    // If not IPayloadData, skips.
-                    if (!data.Key)
-                    {
-                        return data;
-                    }
+//             return protocolStream
+//                 .GroupBy(data => data is IPayloadData)
+//                 .SelectMany<IGroupedObservable<bool, IData>, IData>(data =>
+//                 {
+//                     // If not IPayloadData, skips.
+//                     if (!data.Key)
+//                     {
+//                         return data;
+//                     }
 
-                    // If IPayloadData, switch back to raw data.
-                    return data
-                        .Let(this.payloadService.ToPacket);
-                });
-        }
-    }
-}
+//                     // If IPayloadData, switch back to raw data.
+//                     return data
+//                         .Let(this.payloadService.ToPacket);
+//                 });
+//         }
+//     }
+// }

@@ -7,13 +7,15 @@ namespace Min.MySqlProxyServer.Sockets
         private readonly PayloadReceiverService protocolReceiverService;
         private readonly AuthService authService;
         private readonly ProtocolService protocolService;
+        private readonly LoggerService loggerService;
 
         public ProxyFactory(
             IConnectionDelegatorFactory socketControllerFactory,
             PayloadSenderService protocolSenderService,
             PayloadReceiverService protocolReceiverService,
             AuthService authService,
-            ProtocolService protocolService)
+            ProtocolService protocolService,
+            LoggerService loggerService)
         {
             this.connectionDelegatorFactory = socketControllerFactory;
             this.protocolSenderService = protocolSenderService;
@@ -21,6 +23,7 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.authService = authService;
             this.protocolService = protocolService;
+            this.loggerService = loggerService;
         }
 
         public Proxy Create(ISocketConnection clientConnection, ISocketConnection serverConnection)
@@ -30,7 +33,7 @@ namespace Min.MySqlProxyServer.Sockets
             var serverDelegator = this.connectionDelegatorFactory.Create(clientConnection, this.protocolSenderService, this.protocolReceiverService);
             var clientDelegator = this.connectionDelegatorFactory.Create(serverConnection, this.protocolSenderService, this.protocolReceiverService);
 
-            var proxy = new Proxy(clientDelegator, serverDelegator, this.protocolService, this.authService);
+            var proxy = new Proxy(clientDelegator, serverDelegator, this.protocolService, this.authService, this.loggerService);
             return proxy;
         }
     }

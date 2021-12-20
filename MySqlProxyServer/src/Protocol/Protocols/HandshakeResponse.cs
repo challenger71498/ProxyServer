@@ -24,9 +24,12 @@ namespace Min.MySqlProxyServer.Protocol
 
         public Dictionary<byte[], byte[]> Attributes { get; } = new Dictionary<byte[], byte[]>();
 
-        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = null;
+        public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = new List<IProtocolFactory>()
+        {
+            new AuthSwitchRequestFactory(),
+        };
 
-        public byte[] ToPayload()
+        public IEnumerable<byte[]> ToPayloads()
         {
             using var stream = new MemoryStream();
             using var writer = new BinaryWriter(stream);
@@ -82,7 +85,7 @@ namespace Min.MySqlProxyServer.Protocol
             var buffer = stream.GetBuffer();
             var binary = buffer[..(int)stream.Length];
 
-            return binary;
+            return new List<byte[]> { binary };
         }
 
         private void WriteAttribute(BinaryWriter writer)

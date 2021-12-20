@@ -39,6 +39,9 @@ namespace Min.MySqlProxyServer.Sockets
 
         private async void OnDataReceived(IBinaryData data)
         {
+            // Console.WriteLine(System.Text.Encoding.ASCII.GetString(data.Raw));
+            // Console.WriteLine(Convert.ToHexString(data.Raw));
+
             await this.counterConnection.Send(data.Raw);
         }
 

@@ -1,7 +1,8 @@
-// Copyright (c) Min. All rights reserved.
-
+using System;
 using System.IO;
+using System.Linq;
 using Min.MySqlProxyServer.Protocol;
+using Min.MySqlProxyServer.Sockets;
 
 namespace Min.MySqlProxyServer
 {
@@ -14,9 +15,19 @@ namespace Min.MySqlProxyServer
             this.capability = capability;
         }
 
-        protected override IProtocol Read(BinaryReader reader)
+        protected override IProtocol Read(IPayloadData payloadData, ProxyState state)
         {
-            var errorProtocol = default(ErrorProtocol);
+            if (payloadData.Payloads.Count() != 1)
+            {
+                throw new Exception("Payload count should be 1.");
+            }
+
+            var payload = payloadData.Payloads.First();
+
+            using var stream = new MemoryStream(payload);
+            using var reader = new BinaryReader(stream);
+
+            var errorProtocol = new ErrorProtocol();
 
             reader.ReadByte(); // ERR packet header
 
@@ -30,6 +41,11 @@ namespace Min.MySqlProxyServer
             }
 
             errorProtocol.ErrorMessage = reader.ReadRestOfPacketString();
+
+            if (stream.Position != stream.Length)
+            {
+                throw new Exception($"Reader {this.GetType()} did not reach EOF. {stream.Position} {stream.Length}");
+            }
 
             return errorProtocol;
         }
