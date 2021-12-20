@@ -175,43 +175,5 @@ namespace Min.MySqlProxyServer.Sockets
             this.lastData = data;
             return data;
         }
-
-        private void OnClientDisconnected(object? sender, EventArgs e)
-        {
-            Console.WriteLine("Client has been disconnected!");
-            // this.server.Disconnect(); TODO: Handle client disconnection.
-        }
-
-        private void OnServerDisconnected(object? sender, EventArgs e)
-        {
-            Console.WriteLine("Server has been disconnected!");
-        }
-    }
-
-    public class ProtocolService
-    {
-        private IEnumerable<IProtocolFactory> defaultFactories;
-
-        public ProtocolService(IEnumerable<IProtocolFactory> defaultFactories)
-        {
-            this.defaultFactories = defaultFactories;
-        }
-
-        public IEnumerable<IProtocolFactory> GetAvailableFactories(IData? data)
-        {
-            if (data == null)
-            {
-                return this.defaultFactories;
-            }
-
-            if (data is not IProtocol protocol)
-            {
-                return this.defaultFactories;
-            }
-
-            var availableFactories = protocol.NextAvailableProtocolFactories;
-
-            return availableFactories ?? this.defaultFactories;
-        }
     }
 }
