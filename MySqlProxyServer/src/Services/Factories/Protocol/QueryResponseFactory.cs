@@ -15,10 +15,7 @@ namespace Min.MySqlProxyServer
 
             var columnCountPayload = payloadData.Payloads.First();
 
-            using var stream = new MemoryStream(columnCountPayload);
-            using var reader = new BinaryReader(stream);
-
-            queryResponse.ColumnCount = reader.ReadLengthEncodedInt();
+            this.ReadColumnCount(columnCountPayload, queryResponse);
 
             var columns = new List<ColumnData>();
 
@@ -30,40 +27,56 @@ namespace Min.MySqlProxyServer
 
             var rows = new List<byte[]?[]>();
 
-            for (var i = queryResponse.ColumnCount + 1; i < payloadData.Payloads.Count() - 1; i += queryResponse.ColumnCount)
+            foreach (var payload in payloadData.Payloads.ToArray()[(queryResponse.ColumnCount + 1)..^1])
             {
+                using var stream = new MemoryStream(payload);
+                using var reader = new BinaryReader(stream);
+
+                var flag = reader.ReadByte();
+                stream.Seek(-1, SeekOrigin.Current);
+
+                if (flag == 0xfe)
+                {
+                    break;
+                }
+
                 var row = new List<byte[]?>();
 
                 for (var j = 0; j < queryResponse.ColumnCount; ++j)
                 {
-                    var element = this.ReadRowData(payloadData.Payloads.ElementAt(i));
+                    var nullCheck = reader.ReadByte();
+
+                    if (nullCheck == 0xfb)
+                    {
+                        row.Add(null);
+                        continue;
+                    }
+
+                    stream.Seek(-1, SeekOrigin.Current);
+
+                    var element = reader.ReadLengthEncodedString();
                     row.Add(element);
                 }
 
                 rows.Add(row.ToArray());
             }
 
-            var okPacketFactory = new OKPacketFactory();
-
             var lastPayload = payloadData.Payloads.Last();
-            var dummyPayloadData = new PayloadData(0, new[] { lastPayload });
-
-            if (!okPacketFactory.TryCreate(dummyPayloadData, out var okPacket, state))
-            {
-                throw new Exception("Failed to create ok packet!");
-            }
-
-            queryResponse.OKPacket = (OKPacket)okPacket;
+            var okPacket = this.ReadOKPacket(lastPayload, state);
+            queryResponse.OKPacket = okPacket;
 
             queryResponse.Columns = columns;
             queryResponse.Rows = rows;
 
-            if (stream.Position != stream.Length)
-            {
-                throw new Exception($"Reader {this.GetType()} did not reach EOF. {stream.Position} {stream.Length}");
-            }
-
             return queryResponse;
+        }
+
+        private void ReadColumnCount(byte[] payload, QueryResponse response)
+        {
+            using var stream = new MemoryStream(payload);
+            using var reader = new BinaryReader(stream);
+
+            response.ColumnCount = reader.ReadLengthEncodedInt();
         }
 
         private ColumnData ReadColumnData(byte[] payload)
@@ -99,15 +112,27 @@ namespace Min.MySqlProxyServer
             using var reader = new BinaryReader(stream);
 
             var nullCheck = reader.ReadFixedInt(1);
+            stream.Seek(-1, SeekOrigin.Current);
 
             if (nullCheck == 0xfb)
             {
                 return null;
             }
 
-            stream.Seek(-1, SeekOrigin.Current);
-
             return reader.ReadLengthEncodedString();
+        }
+
+        private OKPacket ReadOKPacket(byte[] payload, ProxyState state)
+        {
+            var okPacketFactory = new OKPacketFactory();
+            var dummyPayloadData = new PayloadData(0, new[] { payload });
+
+            if (!okPacketFactory.TryCreate(dummyPayloadData, out var okPacket, state))
+            {
+                throw new Exception("Failed to create ok packet!");
+            }
+
+            return (OKPacket)okPacket;
         }
     }
 }

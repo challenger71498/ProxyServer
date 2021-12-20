@@ -27,6 +27,8 @@ namespace Min.MySqlProxyServer.Sockets
         private IData? lastData = null;
         private int? lastPayloadSequenceId = null;
 
+        private bool randomMaskDatabase = false;
+
         public Proxy(
             IConnectionDelegator client,
             IConnectionDelegator server,
@@ -69,7 +71,6 @@ namespace Min.MySqlProxyServer.Sockets
 
             this.lastPayloadSequenceId = payload.InitialSequenceId;
 
-            // Console.WriteLine($"{data.GetType()} is getting available factories from {this.lastData?.GetType()}");
             var factories = this.protocolService.GetAvailableFactories(this.lastData);
 
             foreach (var factory in factories)
@@ -97,18 +98,36 @@ namespace Min.MySqlProxyServer.Sockets
 
         private IData? OnClientProtocolCreated(IData data)
         {
+            Console.WriteLine(data.GetType());
+
             if (data is QueryResponse queryResponse)
             {
-                var len = queryResponse.ColumnCount;
-                var random = new Random();
-
-                var mask = random.Next(0, len);
-
-                queryResponse.Columns.ElementAt(mask).Type = 0xfe;
-
-                foreach (var row in queryResponse.Rows)
+                if (!this.randomMaskDatabase)
                 {
-                    row[mask] = Encoding.ASCII.GetBytes("***");
+                    this.lastData = data;
+                    return data;
+                }
+
+                this.randomMaskDatabase = false;
+                Console.WriteLine("RANDOM");
+
+                var len = queryResponse.ColumnCount;
+
+                Console.WriteLine(len);
+
+                var random = new Random();
+                var tryCount = random.Next(1, len);
+
+                for (var i = 0; i < tryCount; ++i)
+                {
+                    var mask = random.Next(0, len);
+
+                    queryResponse.Columns.ElementAt(mask).Type = 0xfe;
+
+                    foreach (var row in queryResponse.Rows)
+                    {
+                        row[mask] = new byte[] { 0x2a, 0x2a, 0x2a };
+                    }
                 }
             }
 
@@ -166,6 +185,11 @@ namespace Min.MySqlProxyServer.Sockets
                     this.lastPayloadSequenceId++;
                     this.toServerDataSubject.OnNext(error);
                     return null;
+                }
+
+                if (queryString.Contains("RANDOM_MASK"))
+                {
+                    this.randomMaskDatabase = true;
                 }
 
                 this.lastData = data;

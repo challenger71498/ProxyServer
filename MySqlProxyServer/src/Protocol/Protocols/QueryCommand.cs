@@ -9,7 +9,7 @@ namespace Min.MySqlProxyServer.Protocol
 
         public IEnumerable<IProtocolFactory>? NextAvailableProtocolFactories { get; } = new List<IProtocolFactory>
         {
-            new QueryResponseFactory(),
+            new QueryResponseFactory(), new OKPacketFactory(),
         };
 
         public IEnumerable<byte[]> ToPayloads()
