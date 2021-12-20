@@ -1,3 +1,5 @@
+A proxy server for MySQL.
+
 # Prerequisites
 
 ## MySQL Docker Container
